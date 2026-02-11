@@ -15,6 +15,10 @@ struct ContentView: View {
     @State private var currentIndex: Int = 0
     @State private var isShowingAnswer: Bool = false
     @AppStorage("selectedVoiceIdentifier") private var selectedVoiceIdentifier: String = ""
+    @AppStorage("isSpeechEnabled") private var isSpeechEnabled: Bool = true
+    @AppStorage("userName") private var userName: String = ""
+    @State private var isShowingSettings: Bool = false
+    @State private var isAwaitingStart: Bool = true
 
     private let speechSynthesizer = AVSpeechSynthesizer()
     private let kidSpeechRate: Float = 0.45
@@ -28,22 +32,36 @@ struct ContentView: View {
                 groups: store.groups,
                 selectedGroupIndex: $selectedGroupIndex,
                 selectedDeckIndex: $selectedDeckIndex,
-                selectedVoiceIdentifier: $selectedVoiceIdentifier,
-                availableVoices: availableVoices,
+                userName: userName,
                 currentIndexDisplay: currentIndexDisplay,
                 currentDeckCount: currentDeck.cards.count,
-                sourceDescription: store.sourceDescription,
-                onGroupChanged: handleGroupChange,
+                onOpenSettings: { isShowingSettings = true },
                 onDeckChanged: handleDeckChange
             )
 
             Spacer(minLength: 0)
 
             if let card = currentCard {
-                FlashcardView(card: card, isShowingAnswer: isShowingAnswer)
-                    .onTapGesture {
-                        toggleCardFace()
-                    }
+                if isAwaitingStart {
+                    BeginCardView(deckTitle: currentDeck.title)
+                        .onTapGesture {
+                            isAwaitingStart = false
+                            speakCurrentQuestionIfEnabled()
+                        }
+                } else {
+                    FlashcardView(
+                        card: card,
+                        isShowingAnswer: isShowingAnswer,
+                        canSpeakAnswer: currentCard != nil,
+                        isSpeechEnabled: isSpeechEnabled,
+                        onSpeakAnswer: speakCurrentAnswerOneShot,
+                        canSpeakQuestion: currentCard != nil,
+                        onSpeakQuestion: speakCurrentQuestionOneShot
+                    )
+                        .onTapGesture {
+                            toggleCardFace()
+                        }
+                }
             } else {
                 Text("No cards available.")
                     .foregroundStyle(.secondary)
@@ -52,12 +70,8 @@ struct ContentView: View {
             Spacer(minLength: 0)
 
             FlashcardControlsView(
-                isShowingAnswer: isShowingAnswer,
                 canNavigate: !currentDeck.cards.isEmpty,
-                canSpeak: currentCard != nil,
                 onPrevious: moveToPrevious,
-                onToggle: toggleCardFace,
-                onSpeakQuestion: speakCurrentQuestion,
                 onNext: moveToNext
             )
         }
@@ -68,9 +82,29 @@ struct ContentView: View {
                 selectedVoiceIdentifier = preferredVoice?.identifier ?? ""
             }
             clampSelection()
+            isAwaitingStart = true
         }
         .onChange(of: store.groups.map(\.id)) { _, _ in
             clampSelection()
+            isAwaitingStart = true
+        }
+        .onChange(of: currentIndex) { _, _ in
+            speakCurrentQuestionIfEnabled()
+        }
+        .onChange(of: selectedVoiceIdentifier) { _, _ in
+            speakVoiceSelection()
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView(
+                groups: store.groups,
+                selectedGroupIndex: $selectedGroupIndex,
+                selectedVoiceIdentifier: $selectedVoiceIdentifier,
+                availableVoices: availableVoices,
+                isSpeechEnabled: $isSpeechEnabled,
+                userName: $userName,
+                sourceDescription: store.sourceDescription,
+                onGroupChanged: handleGroupChange
+            )
         }
     }
 
@@ -149,11 +183,13 @@ struct ContentView: View {
         selectedDeckIndex = 0
         currentIndex = 0
         isShowingAnswer = false
+        isAwaitingStart = true
     }
 
     private func handleDeckChange() {
         currentIndex = 0
         isShowingAnswer = false
+        isAwaitingStart = true
     }
 
     private func moveToPrevious() {
@@ -161,7 +197,6 @@ struct ContentView: View {
         guard !cards.isEmpty else { return }
         isShowingAnswer = false
         currentIndex = (currentIndex - 1 + cards.count) % cards.count
-        speakCurrentQuestion()
     }
 
     private func moveToNext() {
@@ -169,7 +204,6 @@ struct ContentView: View {
         guard !cards.isEmpty else { return }
         isShowingAnswer = false
         currentIndex = (currentIndex + 1) % cards.count
-        speakCurrentQuestion()
     }
 
     private func toggleCardFace() {
@@ -178,15 +212,37 @@ struct ContentView: View {
             isShowingAnswer = willShowAnswer
         }
         if willShowAnswer {
-            speakCurrentAnswer()
+            speakCurrentAnswer(force: false)
         } else {
-            speakCurrentQuestion()
+            speakCurrentQuestionIfEnabled()
         }
     }
 
-    private func speakCurrentAnswer() {
-        guard let card = currentCard else { return }
-        let utterance = AVSpeechUtterance(string: card.answer)
+    private func speakCurrentAnswer(force: Bool) {
+        guard (isSpeechEnabled || force), let card = currentCard else { return }
+        speak(text: card.answer)
+    }
+
+    private func speakCurrentQuestion(force: Bool) {
+        guard (isSpeechEnabled || force), !isAwaitingStart, let card = currentCard else { return }
+        speak(text: card.question)
+    }
+
+    private func speakCurrentQuestionIfEnabled() {
+        guard isSpeechEnabled, !isShowingAnswer, !isAwaitingStart else { return }
+        speakCurrentQuestion(force: false)
+    }
+
+    private func speakCurrentAnswerOneShot() {
+        speakCurrentAnswer(force: true)
+    }
+
+    private func speakCurrentQuestionOneShot() {
+        speakCurrentQuestion(force: true)
+    }
+
+    private func speak(text: String) {
+        let utterance = AVSpeechUtterance(string: text)
         utterance.rate = kidSpeechRate
         utterance.pitchMultiplier = kidPitch
         utterance.preUtteranceDelay = kidPreDelay
@@ -196,16 +252,9 @@ struct ContentView: View {
         speechSynthesizer.speak(utterance)
     }
 
-    private func speakCurrentQuestion() {
-        guard let card = currentCard else { return }
-        let utterance = AVSpeechUtterance(string: card.question)
-        utterance.rate = kidSpeechRate
-        utterance.pitchMultiplier = kidPitch
-        utterance.preUtteranceDelay = kidPreDelay
-        utterance.postUtteranceDelay = kidPostDelay
-        utterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
-        speechSynthesizer.stopSpeaking(at: .immediate)
-        speechSynthesizer.speak(utterance)
+    private func speakVoiceSelection() {
+        let voiceName = selectedVoice?.name ?? "Voice"
+        speak(text: "\(voiceName), at your service.")
     }
 }
 
