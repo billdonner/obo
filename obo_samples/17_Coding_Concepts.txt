@@ -1,0 +1,22 @@
+Title: Coding Concepts
+
+Q: What is an algorithm? | A: A step-by-step plan
+Q: What is a loop? | A: A repeat action
+Q: What is a variable? | A: A place to store information
+Q: What is a bug? | A: A mistake in code
+Q: What is debugging? | A: Finding and fixing bugs
+Q: What is a condition? | A: A true or false test
+Q: What does 'if' mean in code? | A: Do something only if a condition is true
+Q: What is an input? | A: Information given to a program
+Q: What is an output? | A: Information a program shows
+Q: What is a function? | A: A reusable set of steps
+Q: What is a program? | A: Instructions a computer follows
+Q: What is a sequence? | A: Steps in order
+Q: What is a robot? | A: A machine that follows instructions
+Q: What is a command? | A: An instruction
+Q: What is a block in block coding? | A: A puzzle piece of code
+Q: What is a sprite? | A: A character in a program
+Q: What does 'run' mean? | A: Start the program
+Q: What is a crash? | A: When a program stops suddenly
+Q: What is a network? | A: Computers connected together
+Q: What is the internet? | A: A worldwide network

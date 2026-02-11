@@ -1,0 +1,22 @@
+Title: Reading Comprehension
+
+Q: What is the main idea? | A: What a text is mostly about
+Q: What is a detail? | A: Information that supports the main idea
+Q: What is a character? | A: A person or animal in a story
+Q: What is a setting? | A: Where and when a story happens
+Q: What is a plot? | A: The events in a story
+Q: What is the climax? | A: The most exciting part
+Q: What is the theme? | A: The story's message
+Q: What is a problem in a story? | A: The challenge
+Q: What is the solution? | A: How the problem is fixed
+Q: What is a narrator? | A: The voice telling the story
+Q: What is point of view? | A: Who is telling the story
+Q: What is a summary? | A: A short version of the text
+Q: What is an inference? | A: A smart guess from clues
+Q: What is a fact? | A: Something that can be proven
+Q: What is an opinion? | A: What someone thinks
+Q: What does 'predict' mean? | A: Guess what will happen
+Q: What does 'compare' mean? | A: Tell how things are alike
+Q: What does 'contrast' mean? | A: Tell how things are different
+Q: What is a sequence? | A: Order of events
+Q: What does 'context clues' mean? | A: Words around a word help explain it

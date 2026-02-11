@@ -1,0 +1,22 @@
+Title: Music Theory
+
+Q: How many notes are in a musical alphabet? | A: 7
+Q: Name the musical notes. | A: A B C D E F G
+Q: What does a treble clef show? | A: Higher notes
+Q: What does a bass clef show? | A: Lower notes
+Q: What do we call a group of five lines in music? | A: A staff
+Q: What is rhythm? | A: The pattern of beats
+Q: What is tempo? | A: The speed of music
+Q: What is a rest? | A: A silence in music
+Q: What is a beat? | A: The steady pulse
+Q: What does 'forte' mean? | A: Loud
+Q: What does 'piano' mean? | A: Soft
+Q: What is a melody? | A: The main tune
+Q: What is harmony? | A: Notes played together
+Q: What is a chord? | A: Three or more notes together
+Q: What is a measure? | A: A group of beats
+Q: What is 4/4 time? | A: Four beats per measure
+Q: What does 'repeat' mean in music? | A: Play again
+Q: What is an octave? | A: Eight notes apart
+Q: What does a sharp do? | A: Raises a note
+Q: What does a flat do? | A: Lowers a note
