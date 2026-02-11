@@ -39,16 +39,18 @@ final class FlashcardStore {
 
         let sampleUrls = urls.filter { $0.lastPathComponent.range(of: #"^\d{2}_.+\.txt$"#, options: .regularExpression) != nil }
         let sortedUrls = sampleUrls.sorted { $0.lastPathComponent < $1.lastPathComponent }
-        var results: [TopicGroup] = []
+        var decksByGroup: [String: [Deck]] = [:]
         for url in sortedUrls {
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
             let fallbackTitle = url.deletingPathExtension().lastPathComponent
                 .replacingOccurrences(of: "_", with: " ")
-            if let group = parseSampleFile(text: text, fallbackTitle: fallbackTitle) {
-                results.append(group)
+            if let deck = parseSampleDeck(text: text, fallbackTitle: fallbackTitle) {
+                let groupTitle = groupTitle(for: deck.title)
+                decksByGroup[groupTitle, default: []].append(deck)
             }
         }
-        return results
+
+        return orderedGroups(from: decksByGroup)
     }
 
     private func documentsDirectory() -> URL? {
@@ -125,7 +127,7 @@ final class FlashcardStore {
         return groups
     }
 
-    private func parseSampleFile(text: String, fallbackTitle: String) -> TopicGroup? {
+    private func parseSampleDeck(text: String, fallbackTitle: String) -> Deck? {
         var title: String = fallbackTitle
         var cards: [Flashcard] = []
 
@@ -158,7 +160,57 @@ final class FlashcardStore {
         }
 
         guard !cards.isEmpty else { return nil }
-        let deck = Deck(title: title, cards: cards)
-        return TopicGroup(title: title, decks: [deck])
+        return Deck(title: title, cards: cards)
+    }
+
+    private func groupTitle(for deckTitle: String) -> String {
+        let mapping: [String: String] = [
+            "Solar System Basics": "Life & Earth Science",
+            "Earth Science": "Life & Earth Science",
+            "Human Body": "Life & Earth Science",
+            "Ecology & Habitats": "Life & Earth Science",
+            "Weather & Climate": "Life & Earth Science",
+            "Animal Adaptations": "Life & Earth Science",
+            "Fractions & Decimals": "STEM",
+            "Math Word Problems": "STEM",
+            "Coding Concepts": "STEM",
+            "Inventions & Inventors": "STEM",
+            "Simple Machines": "STEM",
+            "U.S. History Snapshots": "Humanities & Arts",
+            "World Geography": "Humanities & Arts",
+            "States & Capitals": "Humanities & Arts",
+            "Everyday Economics": "Humanities & Arts",
+            "Reading Comprehension": "Humanities & Arts",
+            "Vocabulary Builder": "Humanities & Arts",
+            "Grammar & Punctuation": "Humanities & Arts",
+            "Music Theory": "Humanities & Arts",
+            "Art & Color Theory": "Humanities & Arts"
+        ]
+
+        return mapping[deckTitle] ?? "Humanities & Arts"
+    }
+
+    private func orderedGroups(from decksByGroup: [String: [Deck]]) -> [TopicGroup] {
+        let preferredOrder = [
+            "STEM",
+            "Life & Earth Science",
+            "Humanities & Arts"
+        ]
+
+        var groups: [TopicGroup] = []
+        for title in preferredOrder {
+            if let decks = decksByGroup[title], !decks.isEmpty {
+                groups.append(TopicGroup(title: title, decks: decks))
+            }
+        }
+
+        let remaining = decksByGroup.keys.filter { !preferredOrder.contains($0) }.sorted()
+        for title in remaining {
+            if let decks = decksByGroup[title], !decks.isEmpty {
+                groups.append(TopicGroup(title: title, decks: decks))
+            }
+        }
+
+        return groups
     }
 }
