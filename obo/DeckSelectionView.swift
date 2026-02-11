@@ -9,6 +9,7 @@ struct DeckSelectionView: View {
     let availableVoices: [AVSpeechSynthesisVoice]
     let currentIndexDisplay: Int
     let currentDeckCount: Int
+    let sourceDescription: String
     let onGroupChanged: () -> Void
     let onDeckChanged: () -> Void
 
@@ -16,6 +17,10 @@ struct DeckSelectionView: View {
         VStack(spacing: 8) {
             Text("Flashcards")
                 .font(.title.bold())
+
+            Text("Source: \(sourceDescription)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             Picker("Category", selection: $selectedGroupIndex) {
                 ForEach(groups.indices, id: \.self) { index in

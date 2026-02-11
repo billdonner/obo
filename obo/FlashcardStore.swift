@@ -4,22 +4,26 @@ import Observation
 @Observable
 final class FlashcardStore {
     private(set) var groups: [TopicGroup] = []
+    private(set) var sourceDescription: String = "Built-in samples"
 
     private let fileName = "decks.txt"
 
     func load() {
         if let loaded = loadFromDocuments(), !loaded.isEmpty {
             groups = loaded
+            sourceDescription = "Documents/decks.txt"
             return
         }
 
         let bundledSamples = loadFromBundleSamples()
         if !bundledSamples.isEmpty {
             groups = bundledSamples
+            sourceDescription = "Bundled sample decks"
             return
         }
 
         groups = TopicGroup.sample
+        sourceDescription = "Built-in samples"
     }
 
     private func loadFromDocuments() -> [TopicGroup]? {

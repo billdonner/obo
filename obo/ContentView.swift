@@ -32,6 +32,7 @@ struct ContentView: View {
                 availableVoices: availableVoices,
                 currentIndexDisplay: currentIndexDisplay,
                 currentDeckCount: currentDeck.cards.count,
+                sourceDescription: store.sourceDescription,
                 onGroupChanged: handleGroupChange,
                 onDeckChanged: handleDeckChange
             )
