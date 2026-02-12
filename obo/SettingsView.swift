@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var isParentUnlocked: Bool = false
     @State private var isShowingParentGate: Bool = false
     @State private var showParentControls: Bool = false
+    @AppStorage("caregiverUnlockTimestamp") private var caregiverUnlockTimestamp: Double = 0
 
     var body: some View {
         NavigationStack {
@@ -36,7 +37,12 @@ struct SettingsView: View {
                         }
                     } else {
                         Button("Open Caregiver Controls") {
-                            isShowingParentGate = true
+                            if requiresGate {
+                                isShowingParentGate = true
+                            } else {
+                                isParentUnlocked = true
+                                showParentControls = true
+                            }
                         }
                     }
                 }
@@ -52,8 +58,7 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $isShowingParentGate) {
                 ParentGateView {
-                    isParentUnlocked = true
-                    showParentControls = true
+                    handleCaregiverUnlock()
                 }
             }
             .navigationDestination(isPresented: $showParentControls) {
@@ -78,6 +83,17 @@ struct SettingsView: View {
                 familyStore.setSelectedProfileID(newValue)
             }
         )
+    }
+
+    private var requiresGate: Bool {
+        let now = Date().timeIntervalSince1970
+        return now - caregiverUnlockTimestamp > 600
+    }
+
+    private func handleCaregiverUnlock() {
+        caregiverUnlockTimestamp = Date().timeIntervalSince1970
+        isParentUnlocked = true
+        showParentControls = true
     }
 
     private func deckAllowedBinding(deckID: String, profile: FamilyProfile) -> Binding<Bool> {
