@@ -26,6 +26,7 @@ struct DeckSelectionView: View {
                         .accessibilityLabel("Settings")
                 }
                 .buttonStyle(.plain)
+                .foregroundStyle(.primary)
             }
 
             Picker("Topic", selection: $selectedDeckIndex) {

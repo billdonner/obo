@@ -13,7 +13,7 @@ struct FlashcardView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color(.systemBackground))
-                .shadow(radius: 6, y: 3)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, y: 3)
 
             VStack(spacing: 20) {
                 Text(isShowingAnswer ? "Answer" : "Question")
@@ -94,7 +94,7 @@ struct BeginCardView: View {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(Color.accentColor.opacity(0.08))
                 )
-                .shadow(radius: 10, y: 6)
+                .shadow(color: Color.black.opacity(0.2), radius: 10, y: 6)
 
             VStack(spacing: 12) {
                 Image(systemName: "play.circle.fill")

@@ -105,9 +105,30 @@ struct TopicGroup: Identifiable {
 }
 
 struct Deck: Identifiable {
-    let id = UUID()
+    let id: String
     let title: String
     let cards: [Flashcard]
+
+    init(title: String, cards: [Flashcard], id: String? = nil) {
+        self.title = title
+        self.cards = cards
+        self.id = id ?? Deck.slug(from: title)
+    }
+
+    static func slug(from title: String) -> String {
+        let allowed = title.lowercased().map { character -> String in
+            if character.isLetter || character.isNumber {
+                return String(character)
+            }
+            if character == " " || character == "-" || character == "_" || character == "&" {
+                return "-"
+            }
+            return ""
+        }
+        let joined = allowed.joined()
+        let collapsed = joined.replacingOccurrences(of: "-+", with: "-", options: .regularExpression)
+        return collapsed.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    }
 }
 
 struct Flashcard: Identifiable {

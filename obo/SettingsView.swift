@@ -4,74 +4,45 @@ import AVFoundation
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     let groups: [TopicGroup]
+    let visibleGroups: [TopicGroup]
     @Binding var selectedGroupIndex: Int
     @Binding var selectedVoiceIdentifier: String
     let availableVoices: [AVSpeechSynthesisVoice]
     @Binding var isSpeechEnabled: Bool
-    @Binding var userName: String
     let sourceDescription: String
-    let onGroupChanged: () -> Void
+    @Bindable var familyStore: FamilyStore
+
+    @State private var isParentUnlocked: Bool = false
+    @State private var isShowingParentGate: Bool = false
+    @State private var showParentControls: Bool = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Source") {
-                    Text(sourceDescription)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Category") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(groups.indices, id: \.self) { index in
-                            Button {
-                                selectedGroupIndex = index
-                                onGroupChanged()
-                            } label: {
-                                HStack(alignment: .top, spacing: 12) {
-                                    Image(systemName: selectedGroupIndex == index ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(selectedGroupIndex == index ? Color.accentColor : .secondary)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(groups[index].title)
-                                            .font(.headline)
-                                            .foregroundStyle(.primary)
-
-                                        Text(categoryDescription(for: groups[index].title))
-                                            .font(.footnote)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    Spacer()
-                                }
-                            }
-                            .buttonStyle(.plain)
+            List {
+                Section("Active Profile") {
+                    Picker("Profile", selection: selectedProfileBinding) {
+                        ForEach(familyStore.profiles) { profile in
+                            Text("\(profile.name) (\(profile.ageBand.displayName))")
+                                .tag(profile.id)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
 
-                Section("Profile") {
-                    TextField("Your name", text: $userName)
-                        .textInputAutocapitalization(.words)
-                }
-
-                Section("Speech") {
-                    Toggle("Enable Speech", isOn: $isSpeechEnabled)
-
-                    Picker("Voice", selection: $selectedVoiceIdentifier) {
-                        ForEach(availableVoices, id: \.identifier) { voice in
-                            Text("\(voice.name) (\(voice.language))")
-                                .tag(voice.identifier)
+                Section("Caregiver Controls") {
+                    if isParentUnlocked {
+                        Button("Open Caregiver Controls") {
+                            showParentControls = true
+                        }
+                    } else {
+                        Button("Open Caregiver Controls") {
+                            isShowingParentGate = true
                         }
                     }
-                    .disabled(availableVoices.isEmpty)
-                }
-
-                Section("More") {
-                    Text("More options coming soon.")
-                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Settings")
+            .background(Color(.systemGroupedBackground))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -79,7 +50,73 @@ struct SettingsView: View {
                     }
                 }
             }
+            .sheet(isPresented: $isShowingParentGate) {
+                ParentGateView {
+                    isParentUnlocked = true
+                    showParentControls = true
+                }
+            }
+            .navigationDestination(isPresented: $showParentControls) {
+                ParentControlsView(
+                    groups: groups,
+                    visibleGroups: visibleGroups,
+                    selectedGroupIndex: $selectedGroupIndex,
+                    selectedVoiceIdentifier: $selectedVoiceIdentifier,
+                    availableVoices: availableVoices,
+                    isSpeechEnabled: $isSpeechEnabled,
+                    sourceDescription: sourceDescription,
+                    familyStore: familyStore
+                )
+            }
         }
+    }
+
+    private var selectedProfileBinding: Binding<UUID> {
+        Binding(
+            get: { familyStore.selectedProfileID ?? familyStore.currentProfile?.id ?? UUID() },
+            set: { newValue in
+                familyStore.setSelectedProfileID(newValue)
+            }
+        )
+    }
+
+    private func deckAllowedBinding(deckID: String, profile: FamilyProfile) -> Binding<Bool> {
+        Binding(
+            get: {
+                let allowed = Set(profile.allowedDeckIDs)
+                if allowed.isEmpty {
+                    return true
+                }
+                return allowed.contains(deckID)
+            },
+            set: { isAllowed in
+                var updatedProfile = profile
+                var allowed = Set(profile.allowedDeckIDs)
+                if allowed.isEmpty {
+                    allowed = Set(allDeckIDs)
+                }
+                if isAllowed {
+                    allowed.insert(deckID)
+                } else {
+                    allowed.remove(deckID)
+                }
+                if allowed.isEmpty {
+                    updatedProfile.allowedDeckIDs = []
+                } else {
+                    updatedProfile.allowedDeckIDs = Array(allowed)
+                }
+                familyStore.updateProfile(updatedProfile)
+            }
+        )
+    }
+
+    private func deckAgeBinding(deckID: String) -> Binding<AgeBand> {
+        Binding(
+            get: { familyStore.deckAgeBand(for: deckID) },
+            set: { newValue in
+                familyStore.setDeckAgeBand(newValue, for: deckID)
+            }
+        )
     }
 
     private func categoryDescription(for title: String) -> String {
@@ -94,17 +131,117 @@ struct SettingsView: View {
             return "More topics to explore."
         }
     }
+
+    private var allDeckIDs: [String] {
+        groups.flatMap { $0.decks.map(\.id) }
+    }
+}
+
+private struct ParentGateView: View {
+    @Environment(\.dismiss) private var dismiss
+    let onUnlock: () -> Void
+
+    @State private var prompt = ParentGatePrompt.random()
+    @State private var answerText: String = ""
+    @State private var showError: Bool = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+            Form {
+                Section("Caregiver Gate") {
+                    Text(prompt.question)
+                        .font(.headline)
+                            .foregroundStyle(.white)
+
+                        TextField("Answer", text: $answerText)
+                            .keyboardType(.numberPad)
+                            .foregroundStyle(.white)
+                            .tint(.white)
+
+                        if showError {
+                            Text("That answer is not correct.")
+                                .foregroundStyle(.red)
+                        }
+                    }
+
+                    Section {
+                        Button("Try") {
+                            verify()
+                        }
+
+                        Button("New Question") {
+                            prompt = ParentGatePrompt.random()
+                            answerText = ""
+                            showError = false
+                        }
+                        .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                .scrollContentBackground(.hidden)
+                .background(Color.black)
+                .foregroundStyle(.white)
+                .listRowBackground(Color.black.opacity(0.25))
+                .listRowSeparatorTint(.white.opacity(0.2))
+                .environment(\.colorScheme, .dark)
+            }
+            .navigationTitle("Caregiver Gate")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func verify() {
+        guard let value = Int(answerText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            showError = true
+            return
+        }
+
+        if value == prompt.answer {
+            onUnlock()
+            dismiss()
+        } else {
+            showError = true
+        }
+    }
+}
+
+private struct ParentGatePrompt {
+    let left: Int
+    let right: Int
+
+    var question: String {
+        "Solve to unlock: \(left) + \(right)"
+    }
+
+    var answer: Int {
+        left + right
+    }
+
+    static func random() -> ParentGatePrompt {
+        ParentGatePrompt(
+            left: Int.random(in: 12...49),
+            right: Int.random(in: 12...49)
+        )
+    }
 }
 
 #Preview("Settings") {
     SettingsView(
         groups: [],
+        visibleGroups: [],
         selectedGroupIndex: .constant(0),
         selectedVoiceIdentifier: .constant(""),
         availableVoices: AVSpeechSynthesisVoice.speechVoices(),
         isSpeechEnabled: .constant(true),
-        userName: .constant(""),
         sourceDescription: "Bundled sample decks",
-        onGroupChanged: {}
+        familyStore: FamilyStore()
     )
 }
