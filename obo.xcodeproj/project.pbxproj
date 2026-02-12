@@ -6,8 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		88CE5EA12F3D7488008B0F56 /* ContentView+ProfilePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88CE5EA02F3D7488008B0F56 /* ContentView+ProfilePreferences.swift */; };
+		88CE5EA32F3D7548008B0F56 /* ContentView+Speech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88CE5EA22F3D7548008B0F56 /* ContentView+Speech.swift */; };
+		88CE5EA52F3D7565008B0F56 /* ContentView+Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88CE5EA42F3D7565008B0F56 /* ContentView+Session.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		881B2D4F2F38DAD40049C58E /* obo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = obo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		88CE5EA02F3D7488008B0F56 /* ContentView+ProfilePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView+ProfilePreferences.swift"; sourceTree = "<group>"; };
+		88CE5EA22F3D7548008B0F56 /* ContentView+Speech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView+Speech.swift"; sourceTree = "<group>"; };
+		88CE5EA42F3D7565008B0F56 /* ContentView+Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView+Session.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +56,9 @@
 			children = (
 				881B2D512F38DAD40049C58E /* obo */,
 				881B2D502F38DAD40049C58E /* Products */,
+				88CE5EA02F3D7488008B0F56 /* ContentView+ProfilePreferences.swift */,
+				88CE5EA22F3D7548008B0F56 /* ContentView+Speech.swift */,
+				88CE5EA42F3D7565008B0F56 /* ContentView+Session.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -132,6 +144,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				88CE5EA32F3D7548008B0F56 /* ContentView+Speech.swift in Sources */,
+				88CE5EA52F3D7565008B0F56 /* ContentView+Session.swift in Sources */,
+				88CE5EA12F3D7488008B0F56 /* ContentView+ProfilePreferences.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

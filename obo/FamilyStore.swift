@@ -15,10 +15,77 @@ enum AgeBand: String, CaseIterable, Codable, Identifiable {
 }
 
 struct FamilyProfile: Identifiable, Codable {
-    var id: UUID
-    var name: String
-    var ageBand: AgeBand
-    var allowedDeckIDs: [String]
+	var id: UUID
+	var name: String
+	var ageBand: AgeBand
+	var allowedDeckIDs: [String]
+	var preferredVoiceIdentifier: String
+	var speechEnabled: Bool
+	var selectedGroupID: String?
+	var selectedDeckID: String?
+	var showSplash: Bool
+	var showRecommendedRow: Bool
+	var showProgressBar: Bool
+	var showVoiceBadge: Bool
+
+	init(
+		id: UUID,
+		name: String,
+		ageBand: AgeBand,
+		allowedDeckIDs: [String],
+		preferredVoiceIdentifier: String = "",
+		speechEnabled: Bool = false,
+		selectedGroupID: String? = nil,
+		selectedDeckID: String? = nil,
+		showSplash: Bool = true,
+		showRecommendedRow: Bool = true,
+		showProgressBar: Bool = true,
+		showVoiceBadge: Bool = true
+	) {
+		self.id = id
+		self.name = name
+		self.ageBand = ageBand
+		self.allowedDeckIDs = allowedDeckIDs
+		self.preferredVoiceIdentifier = preferredVoiceIdentifier
+		self.speechEnabled = speechEnabled
+		self.selectedGroupID = selectedGroupID
+		self.selectedDeckID = selectedDeckID
+		self.showSplash = showSplash
+		self.showRecommendedRow = showRecommendedRow
+		self.showProgressBar = showProgressBar
+		self.showVoiceBadge = showVoiceBadge
+	}
+
+	private enum CodingKeys: String, CodingKey {
+		case id
+		case name
+		case ageBand
+		case allowedDeckIDs
+		case preferredVoiceIdentifier
+		case speechEnabled
+		case selectedGroupID
+		case selectedDeckID
+		case showSplash
+		case showRecommendedRow
+		case showProgressBar
+		case showVoiceBadge
+	}
+
+	init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		id = try container.decode(UUID.self, forKey: .id)
+		name = try container.decode(String.self, forKey: .name)
+		ageBand = try container.decode(AgeBand.self, forKey: .ageBand)
+		allowedDeckIDs = try container.decodeIfPresent([String].self, forKey: .allowedDeckIDs) ?? []
+		preferredVoiceIdentifier = try container.decodeIfPresent(String.self, forKey: .preferredVoiceIdentifier) ?? ""
+		speechEnabled = try container.decodeIfPresent(Bool.self, forKey: .speechEnabled) ?? false
+		selectedGroupID = try container.decodeIfPresent(String.self, forKey: .selectedGroupID)
+		selectedDeckID = try container.decodeIfPresent(String.self, forKey: .selectedDeckID)
+		showSplash = try container.decodeIfPresent(Bool.self, forKey: .showSplash) ?? true
+		showRecommendedRow = try container.decodeIfPresent(Bool.self, forKey: .showRecommendedRow) ?? true
+		showProgressBar = try container.decodeIfPresent(Bool.self, forKey: .showProgressBar) ?? true
+		showVoiceBadge = try container.decodeIfPresent(Bool.self, forKey: .showVoiceBadge) ?? true
+	}
 }
 
 struct FamilySettings: Codable {
@@ -74,14 +141,34 @@ final class FamilyStore {
         save()
     }
 
-    func addProfile(activate: Bool = true) {
-        let nextIndex = profiles.count + 1
-        let newProfile = FamilyProfile(
-            id: UUID(),
-            name: "Kid \(nextIndex)",
-            ageBand: .fourToFive,
-            allowedDeckIDs: []
-        )
+    func updateCurrentProfileVoice(_ identifier: String) {
+        guard var profile = currentProfile else { return }
+        profile.preferredVoiceIdentifier = identifier
+        updateProfile(profile)
+    }
+
+    func updateCurrentProfileSpeechEnabled(_ enabled: Bool) {
+        guard var profile = currentProfile else { return }
+        profile.speechEnabled = enabled
+        updateProfile(profile)
+    }
+
+	func addProfile(activate: Bool = true) {
+		let nextIndex = profiles.count + 1
+		let newProfile = FamilyProfile(
+			id: UUID(),
+			name: "Kid \(nextIndex)",
+			ageBand: .fourToFive,
+			allowedDeckIDs: [],
+			preferredVoiceIdentifier: "",
+			speechEnabled: false,
+			selectedGroupID: nil,
+			selectedDeckID: nil,
+			showSplash: true,
+			showRecommendedRow: true,
+			showProgressBar: true,
+			showVoiceBadge: true
+		)
         profiles.append(newProfile)
         if activate {
             selectedProfileID = newProfile.id
@@ -103,6 +190,40 @@ final class FamilyStore {
         profiles[index] = profile
         save()
     }
+
+    func updateProfileVoice(_ identifier: String, for profileID: UUID) {
+        guard var profile = profiles.first(where: { $0.id == profileID }) else { return }
+        profile.preferredVoiceIdentifier = identifier
+        updateProfile(profile)
+    }
+
+	func updateProfileSpeechEnabled(_ enabled: Bool, for profileID: UUID) {
+		guard var profile = profiles.first(where: { $0.id == profileID }) else { return }
+		profile.speechEnabled = enabled
+		updateProfile(profile)
+	}
+
+	func updateProfileSelection(groupID: String?, deckID: String?, for profileID: UUID) {
+		guard var profile = profiles.first(where: { $0.id == profileID }) else { return }
+		profile.selectedGroupID = groupID
+		profile.selectedDeckID = deckID
+		updateProfile(profile)
+	}
+
+	func updateProfileUIPreferences(
+		showSplash: Bool,
+		showRecommendedRow: Bool,
+		showProgressBar: Bool,
+		showVoiceBadge: Bool,
+		for profileID: UUID
+	) {
+		guard var profile = profiles.first(where: { $0.id == profileID }) else { return }
+		profile.showSplash = showSplash
+		profile.showRecommendedRow = showRecommendedRow
+		profile.showProgressBar = showProgressBar
+		profile.showVoiceBadge = showVoiceBadge
+		updateProfile(profile)
+	}
 
     func setDeckAgeBand(_ band: AgeBand, for deckID: String) {
         deckAgeBands[deckID] = band
@@ -133,13 +254,21 @@ final class FamilyStore {
         return band == profile.ageBand
     }
 
-    private func seedDefaults() {
-        let defaultProfile = FamilyProfile(
-            id: UUID(),
-            name: "Kid",
-            ageBand: .fourToFive,
-            allowedDeckIDs: []
-        )
+	private func seedDefaults() {
+		let defaultProfile = FamilyProfile(
+			id: UUID(),
+			name: "Kid",
+			ageBand: .fourToFive,
+			allowedDeckIDs: [],
+			preferredVoiceIdentifier: "",
+			speechEnabled: false,
+			selectedGroupID: nil,
+			selectedDeckID: nil,
+			showSplash: true,
+			showRecommendedRow: true,
+			showProgressBar: true,
+			showVoiceBadge: true
+		)
         profiles = [defaultProfile]
         selectedProfileID = defaultProfile.id
         deckAgeBands = [:]

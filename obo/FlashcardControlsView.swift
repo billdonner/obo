@@ -6,17 +6,27 @@ struct FlashcardControlsView: View {
     let onNext: () -> Void
 
     var body: some View {
-        HStack(spacing: 16) {
-            Button("Previous") {
+        HStack(spacing: 28) {
+            Button {
                 onPrevious()
+            } label: {
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.system(size: 56))
             }
-            .buttonStyle(.bordered)
+            .accessibilityLabel("Previous")
+            .buttonStyle(.plain)
+            .foregroundStyle(canNavigate ? .primary : .secondary)
             .disabled(!canNavigate)
 
-            Button("Next") {
+            Button {
                 onNext()
+            } label: {
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.system(size: 56))
             }
-            .buttonStyle(.bordered)
+            .accessibilityLabel("Next")
+            .buttonStyle(.plain)
+            .foregroundStyle(canNavigate ? .primary : .secondary)
             .disabled(!canNavigate)
         }
     }

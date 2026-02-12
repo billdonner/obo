@@ -7,14 +7,22 @@ struct DeckSelectionView: View {
     let userName: String
     let currentIndexDisplay: Int
     let currentDeckCount: Int
+    let isDeckActive: Bool
+    let showRecommendedRow: Bool
+    let recommendedDecks: [Deck]
+    let showProgressBar: Bool
+    let showVoiceBadge: Bool
+    let voiceBadgeText: String
+    let onSelectDeckID: (String) -> Void
     let onOpenSettings: () -> Void
     let onDeckChanged: () -> Void
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: isDeckActive ? 4 : 10) {
             HStack {
                 Text(titleText)
-                    .font(.title.bold())
+                    .font(isDeckActive ? .title3.weight(.semibold) : .largeTitle.bold())
+                    .foregroundStyle(isDeckActive ? .secondary : .primary)
 
                 Spacer()
 
@@ -29,6 +37,40 @@ struct DeckSelectionView: View {
                 .foregroundStyle(.primary)
             }
 
+            if showVoiceBadge && !voiceBadgeText.isEmpty {
+                HStack {
+                    Text("Voice: \(voiceBadgeText)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+            }
+
+            if showRecommendedRow && !recommendedDecks.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Recommended")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(recommendedDecks) { deck in
+                                Button {
+                                    onSelectDeckID(deck.id)
+                                } label: {
+                                    Text(deck.title)
+                                        .font(.caption.weight(.semibold))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.accentColor.opacity(0.15), in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+            }
+
             Picker("Topic", selection: $selectedDeckIndex) {
                 ForEach(currentDeckTitles.indices, id: \.self) { index in
                     Text(currentDeckTitles[index])
@@ -41,7 +83,13 @@ struct DeckSelectionView: View {
             }
 
             Text("\(currentIndexDisplay) of \(currentDeckCount)")
+                .font(isDeckActive ? .caption : .callout)
                 .foregroundStyle(.secondary)
+
+            if showProgressBar && currentDeckCount > 0 {
+                ProgressView(value: Double(currentIndexDisplay), total: Double(currentDeckCount))
+                    .tint(Color.accentColor)
+            }
         }
     }
 

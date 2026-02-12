@@ -1,9 +1,15 @@
 import Foundation
 
 struct TopicGroup: Identifiable {
-    let id = UUID()
+    let id: String
     let title: String
     let decks: [Deck]
+
+    init(title: String, decks: [Deck], id: String? = nil) {
+        self.title = title
+        self.decks = decks
+        self.id = id ?? Deck.slug(from: title)
+    }
 
     static let sample: [TopicGroup] = [
         TopicGroup(

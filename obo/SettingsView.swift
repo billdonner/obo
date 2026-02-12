@@ -6,6 +6,7 @@ struct SettingsView: View {
     let groups: [TopicGroup]
     let visibleGroups: [TopicGroup]
     @Binding var selectedGroupIndex: Int
+    @Binding var selectedDeckIndex: Int
     @Binding var selectedVoiceIdentifier: String
     let availableVoices: [AVSpeechSynthesisVoice]
     @Binding var isSpeechEnabled: Bool
@@ -56,6 +57,15 @@ struct SettingsView: View {
                     }
                 }
             }
+            .onAppear {
+                applyProfileSettings(for: familyStore.currentProfile)
+            }
+            .onChange(of: selectedVoiceIdentifier) { _, newValue in
+                familyStore.updateCurrentProfileVoice(newValue)
+            }
+            .onChange(of: isSpeechEnabled) { _, newValue in
+                familyStore.updateCurrentProfileSpeechEnabled(newValue)
+            }
             .sheet(isPresented: $isShowingParentGate) {
                 ParentGateView {
                     handleCaregiverUnlock()
@@ -66,6 +76,7 @@ struct SettingsView: View {
                     groups: groups,
                     visibleGroups: visibleGroups,
                     selectedGroupIndex: $selectedGroupIndex,
+                    selectedDeckIndex: $selectedDeckIndex,
                     selectedVoiceIdentifier: $selectedVoiceIdentifier,
                     availableVoices: availableVoices,
                     isSpeechEnabled: $isSpeechEnabled,
@@ -81,6 +92,7 @@ struct SettingsView: View {
             get: { familyStore.selectedProfileID ?? familyStore.currentProfile?.id ?? UUID() },
             set: { newValue in
                 familyStore.setSelectedProfileID(newValue)
+                applyProfileSettings(for: familyStore.currentProfile)
             }
         )
     }
@@ -94,6 +106,16 @@ struct SettingsView: View {
         caregiverUnlockTimestamp = Date().timeIntervalSince1970
         isParentUnlocked = true
         showParentControls = true
+    }
+
+    private func applyProfileSettings(for profile: FamilyProfile?) {
+        guard var profile else { return }
+        if profile.preferredVoiceIdentifier.isEmpty {
+            profile.preferredVoiceIdentifier = selectedVoiceIdentifier
+            familyStore.updateProfile(profile)
+        }
+        selectedVoiceIdentifier = profile.preferredVoiceIdentifier
+        isSpeechEnabled = profile.speechEnabled
     }
 
     private func deckAllowedBinding(deckID: String, profile: FamilyProfile) -> Binding<Bool> {
@@ -254,6 +276,7 @@ private struct ParentGatePrompt {
         groups: [],
         visibleGroups: [],
         selectedGroupIndex: .constant(0),
+        selectedDeckIndex: .constant(0),
         selectedVoiceIdentifier: .constant(""),
         availableVoices: AVSpeechSynthesisVoice.speechVoices(),
         isSpeechEnabled: .constant(true),

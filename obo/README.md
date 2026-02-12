@@ -1,18 +1,20 @@
 # obo
 
-Flashcard app for kids with bundled sample decks, speech playback, and simple settings.
+Flashcard app for kids with bundled sample decks, speech playback, and family profiles.
 
 ## Overview
 - Browse categories and topics, then review cards one at a time.
-- Tap to begin a deck; the first question is spoken automatically if speech is enabled.
-- Tap a card to flip between question and answer.
+- Tap “Start Deck”; the first question is spoken automatically if speech is enabled.
+- Tap a card to flip between question and answer; tap answers to move to the next card.
 - Replay question/answer audio from the card corner.
-- Configure speech, voice, and profile name in Settings.
+- Use Family Hub to manage profiles, deck access, and per‑profile preferences.
 
 ## Features
 - **Bundled sample decks** included in the app bundle.
-- **Speech playback** with selectable voice.
-- **Settings** for category, speech toggle, voice, and user name.
+- **Family profiles** with per‑profile category/deck selection.
+- **Speech playback** with selectable voice per profile.
+- **Family Hub** to manage deck access, deck ages, and UI preferences.
+- **Recommended decks** row and **progress bar**.
 - **User title** personalization ("Flashcards for <Name>").
 
 ## Data Sources & Loading Order
@@ -32,17 +34,19 @@ Q: <Question> | A: <Answer>
 ```
 
 ## Speech Behavior
-- **Auto‑speak**: when a new deck starts, the first question is spoken once you tap “Tap to begin”.
+- **Auto‑speak**: when a new deck starts, the first question is spoken once you tap “Start Deck”.
 - **Replay**: use the speaker icon on the card corner to replay question or answer.
 - **One‑shot**: replay works even if speech is disabled, but appears muted.
 
 ## Project Structure
 - `obo/ContentView.swift` — main screen and speech logic
-- `obo/DeckSelectionView.swift` — header + topic picker
-- `obo/FlashcardView.swift` — card UI + replay buttons + “Tap to begin”
+- `obo/ContentView+ProfilePreferences.swift` — profile selection and UI preference helpers
+- `obo/DeckSelectionView.swift` — header + topic picker + recommended row + progress
+- `obo/FlashcardView.swift` — card UI + replay buttons + “Start Deck”
 - `obo/FlashcardControlsView.swift` — previous/next controls
 - `obo/FlashcardStore.swift` — loading + parsing decks
 - `obo/SettingsView.swift` — settings UI
+- `obo/ParentControlsView.swift` — Family Hub + caregiver tools
 - `obo/SampleDecks/` — bundled sample decks
 
 ## Architecture (High Level)
@@ -53,6 +57,8 @@ flowchart TB
     B --> D[FlashcardView]
     B --> E[FlashcardControlsView]
     B --> F[SettingsView]
+    F --> G[ParentControlsView]
+    G --> H[FamilyStore]
 
     subgraph Data
         G[Documents/decks.txt]

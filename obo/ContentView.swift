@@ -9,27 +9,27 @@ import SwiftUI
 import AVFoundation
 
 struct ContentView: View {
-    @State private var store = FlashcardStore()
-    @State private var familyStore = FamilyStore()
-    @State private var selectedGroupIndex: Int = 0
-    @State private var selectedDeckIndex: Int = 0
-    @State private var currentIndex: Int = 0
-    @State private var isShowingAnswer: Bool = false
-    @AppStorage("selectedVoiceIdentifier") private var selectedVoiceIdentifier: String = ""
-    @AppStorage("isSpeechEnabled") private var isSpeechEnabled: Bool = false
-    @State private var isShowingSettings: Bool = false
-    @State private var isAwaitingStart: Bool = true
-    @State private var isShowingLaunch: Bool = true
+    @State var store = FlashcardStore()
+    @State var familyStore = FamilyStore()
+    @State var selectedGroupIndex: Int = 0
+    @State var selectedDeckIndex: Int = 0
+    @State var currentIndex: Int = 0
+    @State var isShowingAnswer: Bool = false
+    @AppStorage("selectedVoiceIdentifier") var selectedVoiceIdentifier: String = ""
+    @AppStorage("isSpeechEnabled") var isSpeechEnabled: Bool = false
+    @State var isShowingSettings: Bool = false
+    @State var isAwaitingStart: Bool = true
+    @State var isShowingLaunch: Bool = true
 
-    private let speechSynthesizer = AVSpeechSynthesizer()
-    private let kidSpeechRate: Float = 0.45
-    private let kidPitch: Float = 0.95
-    private let kidPreDelay: Double = 0
-    private let kidPostDelay: Double = 0
+    let speechSynthesizer = AVSpeechSynthesizer()
+    let kidSpeechRate: Float = 0.45
+    let kidPitch: Float = 0.95
+    let kidPreDelay: Double = 0
+    let kidPostDelay: Double = 0
 
     var body: some View {
         ZStack {
-            VStack(spacing: 24) {
+            VStack(spacing: isDeckActive ? 18 : 24) {
                 DeckSelectionView(
                     groups: visibleGroups,
                     selectedGroupIndex: $selectedGroupIndex,
@@ -37,19 +37,27 @@ struct ContentView: View {
                     userName: familyStore.currentProfile?.name ?? "",
                     currentIndexDisplay: currentIndexDisplay,
                     currentDeckCount: currentDeck.cards.count,
+                    isDeckActive: isDeckActive,
+                    showRecommendedRow: currentProfile?.showRecommendedRow ?? true,
+                    recommendedDecks: recommendedDecks,
+                    showProgressBar: currentProfile?.showProgressBar ?? true,
+                    showVoiceBadge: currentProfile?.showVoiceBadge ?? true,
+                    voiceBadgeText: voiceBadgeText,
+                    onSelectDeckID: selectDeck(by:),
                     onOpenSettings: { isShowingSettings = true },
                     onDeckChanged: handleDeckChange
                 )
 
                 Spacer(minLength: 0)
 
-                if let card = currentCard {
+                if visibleGroups.isEmpty {
+                    EmptyStateView(profileName: familyStore.currentProfile?.name ?? "")
+                } else if let card = currentCard {
                     if isAwaitingStart {
-                        BeginCardView(deckTitle: currentDeck.title)
-                            .onTapGesture {
-                                isAwaitingStart = false
-                                speakCurrentQuestionIfEnabled()
-                            }
+                        BeginCardView(deckTitle: currentDeck.title) {
+                            isAwaitingStart = false
+                            speakCurrentQuestionIfEnabled()
+                        }
                     } else {
                         FlashcardView(
                             card: card,
@@ -61,11 +69,11 @@ struct ContentView: View {
                             onSpeakQuestion: speakCurrentQuestionOneShot
                         )
                             .onTapGesture {
-                                toggleCardFace()
+                                handleCardTap()
                             }
                     }
                 } else {
-                    Text("No cards available.")
+                    Text("No cards in this deck yet.")
                         .foregroundStyle(.secondary)
                 }
 
@@ -93,6 +101,8 @@ struct ContentView: View {
             if selectedVoiceIdentifier.isEmpty {
                 selectedVoiceIdentifier = preferredVoice?.identifier ?? ""
             }
+            syncSpeechSettingsFromProfile()
+            syncSelectionFromProfile()
             clampSelection()
             isAwaitingStart = true
             showLaunchIfNeeded()
@@ -104,6 +114,15 @@ struct ContentView: View {
         .onChange(of: familyStore.changeToken) { _, _ in
             clampSelection()
             isAwaitingStart = true
+            syncSpeechSettingsFromProfile()
+            syncSelectionFromProfile()
+        }
+        .onChange(of: selectedGroupIndex) { _, _ in
+            handleGroupChange()
+            persistSelectionToProfile()
+        }
+        .onChange(of: selectedDeckIndex) { _, _ in
+            persistSelectionToProfile()
         }
         .onChange(of: currentIndex) { _, _ in
             speakCurrentQuestionIfEnabled()
@@ -116,6 +135,7 @@ struct ContentView: View {
                 groups: store.groups,
                 visibleGroups: visibleGroups,
                 selectedGroupIndex: $selectedGroupIndex,
+                selectedDeckIndex: $selectedDeckIndex,
                 selectedVoiceIdentifier: $selectedVoiceIdentifier,
                 availableVoices: availableVoices,
                 isSpeechEnabled: $isSpeechEnabled,
@@ -129,14 +149,18 @@ struct ContentView: View {
         currentDeck.cards.isEmpty ? 0 : (currentIndex + 1)
     }
 
-    private var availableVoices: [AVSpeechSynthesisVoice] {
+    var isDeckActive: Bool {
+        currentCard != nil && !isAwaitingStart
+    }
+
+    var availableVoices: [AVSpeechSynthesisVoice] {
         let voices = AVSpeechSynthesisVoice.speechVoices()
             .filter { $0.language.hasPrefix("en") }
             .sorted { $0.name < $1.name }
         return voices
     }
 
-    private var visibleGroups: [TopicGroup] {
+    var visibleGroups: [TopicGroup] {
         guard let profile = familyStore.currentProfile else {
             return store.groups
         }
@@ -161,15 +185,15 @@ struct ContentView: View {
         return filteredGroups
     }
 
-    private var preferredVoice: AVSpeechSynthesisVoice? {
+    var preferredVoice: AVSpeechSynthesisVoice? {
         availableVoices.first { $0.language == "en-US" } ?? availableVoices.first
     }
 
-    private var selectedVoice: AVSpeechSynthesisVoice? {
+    var selectedVoice: AVSpeechSynthesisVoice? {
         availableVoices.first { $0.identifier == selectedVoiceIdentifier } ?? preferredVoice
     }
 
-    private var currentGroup: TopicGroup {
+    var currentGroup: TopicGroup {
         guard !visibleGroups.isEmpty,
               selectedGroupIndex >= 0,
               selectedGroupIndex < visibleGroups.count else {
@@ -178,7 +202,7 @@ struct ContentView: View {
         return visibleGroups[selectedGroupIndex]
     }
 
-    private var currentDeck: Deck {
+    var currentDeck: Deck {
         let decks = currentGroup.decks
         guard !decks.isEmpty,
               selectedDeckIndex >= 0,
@@ -188,7 +212,7 @@ struct ContentView: View {
         return decks[selectedDeckIndex]
     }
 
-    private var currentCard: Flashcard? {
+    var currentCard: Flashcard? {
         let cards = currentDeck.cards
         guard !cards.isEmpty,
               currentIndex >= 0,
@@ -221,107 +245,6 @@ struct ContentView: View {
         isShowingAnswer = false
     }
 
-    private func handleGroupChange() {
-        selectedDeckIndex = 0
-        currentIndex = 0
-        isShowingAnswer = false
-        isAwaitingStart = true
-    }
-
-    private func handleDeckChange() {
-        currentIndex = 0
-        isShowingAnswer = false
-        isAwaitingStart = true
-    }
-
-    private func moveToPrevious() {
-        let cards = currentDeck.cards
-        guard !cards.isEmpty else { return }
-        isShowingAnswer = false
-        currentIndex = (currentIndex - 1 + cards.count) % cards.count
-    }
-
-    private func moveToNext() {
-        let cards = currentDeck.cards
-        guard !cards.isEmpty else { return }
-        isShowingAnswer = false
-        currentIndex = (currentIndex + 1) % cards.count
-    }
-
-    private func toggleCardFace() {
-        let willShowAnswer = !isShowingAnswer
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            isShowingAnswer = willShowAnswer
-        }
-        if willShowAnswer {
-            speakCurrentAnswer(force: false)
-        } else {
-            speakCurrentQuestionIfEnabled()
-        }
-    }
-
-    private func speakCurrentAnswer(force: Bool) {
-        guard (isSpeechEnabled || force), let card = currentCard else { return }
-        speak(text: card.answer)
-    }
-
-    private func speakCurrentQuestion(force: Bool) {
-        guard (isSpeechEnabled || force), !isAwaitingStart, let card = currentCard else { return }
-        speak(text: card.question)
-    }
-
-    private func speakCurrentQuestionIfEnabled() {
-        guard isSpeechEnabled, !isShowingAnswer, !isAwaitingStart else { return }
-        speakCurrentQuestion(force: false)
-    }
-
-    private func speakCurrentAnswerOneShot() {
-        speakCurrentAnswer(force: true)
-    }
-
-    private func speakCurrentQuestionOneShot() {
-        speakCurrentQuestion(force: true)
-    }
-
-    private func speak(text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers, .interruptSpokenAudioAndMixWithOthers])
-        try? session.setActive(true)
-        if speechSynthesizer.isSpeaking {
-            speechSynthesizer.stopSpeaking(at: .immediate)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                speakNow(text: trimmed)
-            }
-        } else {
-            speakNow(text: trimmed)
-        }
-    }
-
-    private func speakNow(text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = kidSpeechRate
-        utterance.pitchMultiplier = kidPitch
-        utterance.preUtteranceDelay = kidPreDelay
-        utterance.postUtteranceDelay = kidPostDelay
-        utterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
-        speechSynthesizer.speak(utterance)
-    }
-
-    private func speakVoiceSelection() {
-        let voiceName = selectedVoice?.name ?? "Voice"
-        speak(text: "\(voiceName), at your service.")
-    }
-
-    private func showLaunchIfNeeded() {
-        guard isShowingLaunch else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation(.easeOut(duration: 1.2)) {
-                isShowingLaunch = false
-            }
-        }
-    }
 }
 
 private struct LaunchOverlayView: View {
