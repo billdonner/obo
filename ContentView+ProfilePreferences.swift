@@ -7,8 +7,24 @@ extension ContentView {
         familyStore.currentProfile
     }
 
+    var userNameText: String {
+        currentProfile?.name ?? ""
+    }
+
+    var showRecommendedRow: Bool {
+        currentProfile?.showRecommendedRow ?? true
+    }
+
+    var showProgressBar: Bool {
+        currentProfile?.showProgressBar ?? true
+    }
+
+    var showVoiceBadge: Bool {
+        currentProfile?.showVoiceBadge ?? true
+    }
+
     var recommendedDecks: [Deck] {
-        guard currentProfile?.showRecommendedRow ?? true else { return [] }
+        guard showRecommendedRow else { return [] }
         let decks = visibleGroups.flatMap { $0.decks }
         return Array(decks.prefix(3))
     }

@@ -189,8 +189,8 @@ struct OnboardingFlowView: View {
     }
 
     private func defaultVoiceID() -> String? {
-        let danielle = availableVoices.first { $0.name.localizedCaseInsensitiveContains("danielle") }
-        return danielle?.identifier ?? availableVoices.first(where: { $0.language == "en-US" })?.identifier
+        let ralph = availableVoices.first { $0.name.localizedCaseInsensitiveContains("ralph") }
+        return ralph?.identifier ?? availableVoices.first(where: { $0.language == "en-US" })?.identifier
     }
 
     private func finishOnboarding() {

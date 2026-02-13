@@ -9,6 +9,7 @@ import SwiftUI
 import AVFoundation
 
 struct ContentView: View {
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State var store = FlashcardStore()
     @State var familyStore = FamilyStore()
     @State var selectedGroupIndex: Int = 0
@@ -20,6 +21,9 @@ struct ContentView: View {
     @State var isShowingSettings: Bool = false
     @State var isAwaitingStart: Bool = true
     @State var isShowingLaunch: Bool = true
+    @State var isShowingOnboarding: Bool = false
+    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding: Bool = false
+    @AppStorage("forceOnboarding") var forceOnboarding: Bool = false
 
     let speechSynthesizer = AVSpeechSynthesizer()
     let kidSpeechRate: Float = 0.45
@@ -29,64 +33,9 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: isDeckActive ? 18 : 24) {
-                DeckSelectionView(
-                    groups: visibleGroups,
-                    selectedGroupIndex: $selectedGroupIndex,
-                    selectedDeckIndex: $selectedDeckIndex,
-                    userName: familyStore.currentProfile?.name ?? "",
-                    currentIndexDisplay: currentIndexDisplay,
-                    currentDeckCount: currentDeck.cards.count,
-                    isDeckActive: isDeckActive,
-                    showRecommendedRow: currentProfile?.showRecommendedRow ?? true,
-                    recommendedDecks: recommendedDecks,
-                    showProgressBar: currentProfile?.showProgressBar ?? true,
-                    showVoiceBadge: currentProfile?.showVoiceBadge ?? true,
-                    voiceBadgeText: voiceBadgeText,
-                    onSelectDeckID: selectDeck(by:),
-                    onOpenSettings: { isShowingSettings = true },
-                    onDeckChanged: handleDeckChange
-                )
-
-                Spacer(minLength: 0)
-
-                if visibleGroups.isEmpty {
-                    EmptyStateView(profileName: familyStore.currentProfile?.name ?? "")
-                } else if let card = currentCard {
-                    if isAwaitingStart {
-                        BeginCardView(deckTitle: currentDeck.title) {
-                            isAwaitingStart = false
-                            speakCurrentQuestionIfEnabled()
-                        }
-                    } else {
-                        FlashcardView(
-                            card: card,
-                            isShowingAnswer: isShowingAnswer,
-                            canSpeakAnswer: currentCard != nil,
-                            isSpeechEnabled: isSpeechEnabled,
-                            onSpeakAnswer: speakCurrentAnswerOneShot,
-                            canSpeakQuestion: currentCard != nil,
-                            onSpeakQuestion: speakCurrentQuestionOneShot
-                        )
-                            .onTapGesture {
-                                handleCardTap()
-                            }
-                    }
-                } else {
-                    Text("No cards in this deck yet.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-
-                FlashcardControlsView(
-                    canNavigate: !currentDeck.cards.isEmpty,
-                    onPrevious: moveToPrevious,
-                    onNext: moveToNext
-                )
-            }
-            .opacity(isShowingLaunch ? 0 : 1)
-            .animation(.easeOut(duration: 1.1), value: isShowingLaunch)
+            mainContent
+                .opacity(isShowingLaunch ? 0 : 1)
+                .animation(.easeOut(duration: 1.1), value: isShowingLaunch)
 
             if isShowingLaunch {
                 LaunchOverlayView()
@@ -106,6 +55,7 @@ struct ContentView: View {
             clampSelection()
             isAwaitingStart = true
             showLaunchIfNeeded()
+            updateOnboardingVisibility()
         }
         .onChange(of: store.groups.map(\.id)) { _, _ in
             clampSelection()
@@ -116,13 +66,23 @@ struct ContentView: View {
             isAwaitingStart = true
             syncSpeechSettingsFromProfile()
             syncSelectionFromProfile()
+            updateOnboardingVisibility()
+        }
+        .onChange(of: hasSeenOnboarding) { _, _ in
+            updateOnboardingVisibility()
+        }
+        .onChange(of: forceOnboarding) { _, _ in
+            if forceOnboarding {
+                isShowingSettings = false
+            }
+            updateOnboardingVisibility()
         }
         .onChange(of: selectedGroupIndex) { _, _ in
             handleGroupChange()
             persistSelectionToProfile()
         }
         .onChange(of: selectedDeckIndex) { _, _ in
-            persistSelectionToProfile()
+            handleDeckChange()
         }
         .onChange(of: currentIndex) { _, _ in
             speakCurrentQuestionIfEnabled()
@@ -143,9 +103,18 @@ struct ContentView: View {
                 familyStore: familyStore
             )
         }
+        .fullScreenCover(isPresented: $isShowingOnboarding) {
+            OnboardingFlowView(
+                familyStore: familyStore,
+                groups: store.groups,
+                availableVoices: availableVoices,
+                hasSeenOnboarding: $hasSeenOnboarding,
+                forceOnboarding: $forceOnboarding
+            )
+        }
     }
 
-    private var currentIndexDisplay: Int {
+    var currentIndexDisplay: Int {
         currentDeck.cards.isEmpty ? 0 : (currentIndex + 1)
     }
 
@@ -186,7 +155,8 @@ struct ContentView: View {
     }
 
     var preferredVoice: AVSpeechSynthesisVoice? {
-        availableVoices.first { $0.language == "en-US" } ?? availableVoices.first
+        let ralph = availableVoices.first { $0.name.localizedCaseInsensitiveContains("ralph") }
+        return ralph ?? availableVoices.first { $0.language == "en-US" } ?? availableVoices.first
     }
 
     var selectedVoice: AVSpeechSynthesisVoice? {

@@ -405,11 +405,13 @@ private struct FamilySpeechView: View {
 }
 
 private struct FamilyUIPreferencesView: View {
+    @Environment(\.dismiss) private var dismiss
     let profileName: String
     @Binding var showSplash: Bool
     @Binding var showRecommendedRow: Bool
     @Binding var showProgressBar: Bool
     @Binding var showVoiceBadge: Bool
+    @AppStorage("forceOnboarding") private var forceOnboarding: Bool = false
 
     var body: some View {
         List {
@@ -424,6 +426,13 @@ private struct FamilyUIPreferencesView: View {
                 Toggle("Show recommended decks", isOn: $showRecommendedRow)
                 Toggle("Show progress bar", isOn: $showProgressBar)
                 Toggle("Show voice badge", isOn: $showVoiceBadge)
+            }
+
+            Section {
+                Button("Run Onboarding") {
+                    forceOnboarding = true
+                    dismiss()
+                }
             }
         }
         .navigationTitle("UI Preferences")

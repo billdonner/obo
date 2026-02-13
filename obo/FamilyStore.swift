@@ -254,32 +254,14 @@ final class FamilyStore {
         return band == profile.ageBand
     }
 
-	private func seedDefaults() {
-		let defaultProfile = FamilyProfile(
-			id: UUID(),
-			name: "Kid",
-			ageBand: .fourToFive,
-			allowedDeckIDs: [],
-			preferredVoiceIdentifier: "",
-			speechEnabled: false,
-			selectedGroupID: nil,
-			selectedDeckID: nil,
-			showSplash: true,
-			showRecommendedRow: true,
-			showProgressBar: true,
-			showVoiceBadge: true
-		)
-        profiles = [defaultProfile]
-        selectedProfileID = defaultProfile.id
+    private func seedDefaults() {
+        profiles = []
+        selectedProfileID = nil
         deckAgeBands = [:]
         save()
     }
 
     private func ensureDefaultsIfNeeded() {
-        if profiles.isEmpty {
-            seedDefaults()
-            return
-        }
         if selectedProfileID == nil {
             selectedProfileID = profiles.first?.id
         }
