@@ -10,8 +10,17 @@ obo-gen → Postgres → obo-server → obo-ios
 ```
 
 - **obo-gen** calls the Claude API to generate flashcard content, writes decks to Postgres
-- **obo-server** reads from Postgres, serves decks via REST API on port 9810
+- **obo-server** reads from Postgres, serves decks via REST API on port 9810 with embedded web UI
 - **obo-ios** fetches decks from obo-server, displays as interactive flashcards
+
+## Live URLs
+
+| App | URL |
+|-----|-----|
+| OBO Server (API + web UI) | https://bd-obo-server.fly.dev |
+| Nagzerver (API + web app) | https://bd-nagzerver.fly.dev |
+| Alities Engine | https://bd-alities-engine.fly.dev |
+| Server Monitor | https://bd-server-monitor.fly.dev |
 
 ## Documentation
 
