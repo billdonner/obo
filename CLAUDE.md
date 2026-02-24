@@ -10,8 +10,10 @@ OBO is a flashcard learning app powered by AI-generated decks. The backend is **
 | **card-engine** | `~/card-engine` | Unified FastAPI backend (flashcards + trivia + ingestion) |
 | **obo-gen** | `~/obo-gen` | Swift CLI generator (writes decks to Postgres) |
 | **obo-ios** | `~/obo-ios` | SwiftUI iOS flashcard app |
+| **cardz-studio** | `~/cardz-studio` | React content management studio (port 9850) |
 | ~~obo-server~~ | `~/obo-server` | Retired — replaced by card-engine |
 | ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to card-engine |
+| ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
 
 There is NO runnable code in this repo. All executable work happens in the satellite repos.
 
@@ -35,6 +37,14 @@ Port **9810** — FastAPI + asyncpg, serves both flashcard and trivia content.
 | `POST /api/v1/ingestion/pause` | Pause (finish current batch, then sleep) |
 | `POST /api/v1/ingestion/resume` | Resume from paused state |
 | `GET /api/v1/ingestion/runs` | Recent source_run audit log |
+| `POST /api/v1/studio/decks` | Create deck (title, kind, properties) |
+| `PATCH /api/v1/studio/decks/{id}` | Update deck metadata |
+| `DELETE /api/v1/studio/decks/{id}` | Delete deck + cascade cards |
+| `POST /api/v1/studio/decks/{id}/cards` | Create card in deck |
+| `PATCH /api/v1/studio/decks/{id}/cards/{cid}` | Update card |
+| `DELETE /api/v1/studio/decks/{id}/cards/{cid}` | Delete card |
+| `POST /api/v1/studio/decks/{id}/cards/reorder` | Batch reorder cards |
+| `GET /api/v1/studio/search?q=` | Full-text search across cards |
 
 ```bash
 # Run card-engine
@@ -54,6 +64,27 @@ The ingestion daemon generates trivia questions via OpenAI and writes them to Po
 | `CE_INGEST_CONCURRENT_BATCHES` | 5 | Parallel OpenAI requests per cycle |
 
 The daemon cycles through 20 canonical trivia categories, generates questions via GPT-4o-mini, deduplicates (signature + Jaccard), and inserts into the `cards` table with `deck.kind='trivia'`. Each cycle is logged as a `source_runs` row.
+
+## cardz-studio
+
+Port **9850** — React 19 + TypeScript + Vite content management frontend.
+
+```bash
+# Run cardz-studio (requires card-engine running on 9810)
+cd ~/cardz-studio && npm run dev
+```
+
+| Route | Page | Purpose |
+|-------|------|---------|
+| `/` | Dashboard | Deck counts, engine status, recent decks |
+| `/decks` | DecksList | Browse/filter/create decks |
+| `/decks/:id` | DeckEditor | Edit deck metadata, manage cards |
+| `/decks/:id/cards/new` | CardEditor | Create card (kind-specific form) |
+| `/decks/:id/cards/:cardId` | CardEditor | Edit card |
+| `/ingestion` | Ingestion | Daemon control + run history |
+| `/search` | Search | Full-text search across cards |
+
+Extensible form registry: add a new card kind by creating one form component in `src/components/forms/` and registering it in `index.ts`.
 
 ## Cross-Project Sync
 
