@@ -79,7 +79,8 @@ curl localhost:9810/metrics
 
 | App | URL |
 |-----|-----|
-| OBO Server (API + web UI) | https://bd-obo-server.fly.dev |
+| card-engine (unified API) | https://bd-card-engine.fly.dev |
+| OBO Server (legacy) | https://bd-obo-server.fly.dev |
 | Nagzerver (API + web app) | https://bd-nagzerver.fly.dev |
 | Alities Engine | https://bd-alities-engine.fly.dev |
 | Server Monitor | https://bd-server-monitor.fly.dev |
