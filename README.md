@@ -1,32 +1,34 @@
 # OBO
 
-OBO is a flashcard learning app powered by AI-generated decks stored in PostgreSQL and served via a FastAPI backend. The backend is being unified into **card-engine**, which also serves the Alities trivia platform from the same database.
+OBO is a flashcard learning app powered by AI-generated decks stored in PostgreSQL and served via a FastAPI backend. **card-engine** is the unified backend serving both OBO flashcards and Alities trivia, with a built-in OpenAI ingestion pipeline.
 
 ## Architecture
 
 ```
-                    ┌─────────────┐
-obo-gen ──────────► │             │ ──► /api/v1/flashcards ──► obo-ios / flasherz-ios
-  (CLI)             │  card-engine│
-ingestion ────────► │  (FastAPI)  │ ──► /api/v1/trivia ─────► alities-mobile
-  (providers)       │  port 9810  │
-                    │             │ ──► /api/v1/decks ──────► generic clients
-                    └──────┬──────┘
-                           │
-                      PostgreSQL
-                     (card_engine)
+                    ┌──────────────────┐
+obo-gen ──────────► │                  │ ──► /api/v1/flashcards ──► obo-ios / flasherz-ios
+  (CLI)             │   card-engine    │
+OpenAI ◄──────────► │   (FastAPI)      │ ──► /api/v1/trivia ─────► alities-mobile
+  (ingestion)       │   port 9810      │
+                    │                  │ ──► /api/v1/ingestion ──► daemon control
+                    │                  │
+                    │                  │ ──► /api/v1/decks ──────► generic clients
+                    └────────┬─────────┘
+                             │
+                        PostgreSQL
+                       (card_engine)
 ```
 
-- **card-engine** unified backend serving both flashcard and trivia content
-- **obo-gen** calls the Claude API to generate flashcard content, writes decks to Postgres
-- **obo-ios** / **flasherz-ios** fetch decks from `/api/v1/flashcards`
-- **alities-mobile** fetches trivia from `/api/v1/trivia/gamedata`
+- **card-engine** — unified backend: flashcards, trivia content, and OpenAI ingestion daemon
+- **obo-gen** — Swift CLI that calls Claude API to generate flashcard decks, writes to Postgres
+- **obo-ios** / **flasherz-ios** — fetch decks from `/api/v1/flashcards`
+- **alities-mobile** — fetches trivia from `/api/v1/trivia/gamedata`, monitors ingestion via `/api/v1/ingestion/status`
 
 ## card-engine API
 
-Port **9810** — inherits from obo-server.
+Port **9810** — FastAPI + asyncpg + httpx.
 
-### Core Endpoints
+### Core
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -40,19 +42,40 @@ Port **9810** — inherits from obo-server.
 | GET | `/api/v1/decks` | List decks — filters: `kind`, `age`, `limit`, `offset` |
 | GET | `/api/v1/decks/{id}` | Single deck with all cards |
 
-### Flashcard Adapter (Layer 2) — backward-compatible with obo-ios
+### Flashcard Adapter (Layer 2)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/flashcards` | All flashcard decks with cards in one bulk call |
+| GET | `/api/v1/flashcards` | All flashcard decks with cards |
 | GET | `/api/v1/flashcards/{id}` | Single flashcard deck with cards |
 
-### Trivia Adapter (Layer 2) — backward-compatible with alities-mobile
+### Trivia Adapter (Layer 2)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/trivia/gamedata` | Bulk export in alities Challenge format |
 | GET | `/api/v1/trivia/categories` | Categories with counts + SF Symbol pics |
+
+### Ingestion Control (Layer 2)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/ingestion/status` | Daemon state, stats, and config |
+| POST | `/api/v1/ingestion/start` | Start the ingestion daemon |
+| POST | `/api/v1/ingestion/stop` | Stop the ingestion daemon |
+| POST | `/api/v1/ingestion/pause` | Pause (finish current batch, then sleep) |
+| POST | `/api/v1/ingestion/resume` | Resume from paused state |
+| GET | `/api/v1/ingestion/runs` | Recent source_run audit log |
+
+### Ingestion Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CE_OPENAI_API_KEY` | (required) | OpenAI API key for trivia generation |
+| `CE_INGEST_CYCLE_SECONDS` | 60 | Sleep between ingestion cycles |
+| `CE_INGEST_BATCH_SIZE` | 10 | Questions per category per batch |
+| `CE_INGEST_AUTO_START` | false | Auto-start daemon on server boot |
+| `CE_INGEST_CONCURRENT_BATCHES` | 5 | Parallel OpenAI requests per cycle |
 
 ### Commands
 
@@ -66,13 +89,17 @@ psql -d card_engine -f ~/card-engine/schema/001_initial.sql
 # Run server (dev)
 cd ~/card-engine && python3.11 -m uvicorn server.app:app --port 9810 --reload
 
+# Run server with ingestion enabled
+cd ~/card-engine && CE_OPENAI_API_KEY=sk-... python3.11 -m uvicorn server.app:app --port 9810 --reload
+
 # Test endpoints
 curl localhost:9810/health
-curl localhost:9810/api/v1/decks
 curl localhost:9810/api/v1/flashcards
 curl localhost:9810/api/v1/trivia/gamedata
 curl localhost:9810/api/v1/trivia/categories
-curl localhost:9810/metrics
+curl localhost:9810/api/v1/ingestion/status
+curl -X POST localhost:9810/api/v1/ingestion/start
+curl localhost:9810/api/v1/ingestion/runs
 ```
 
 ## Live URLs
@@ -81,7 +108,6 @@ curl localhost:9810/metrics
 |-----|-----|
 | card-engine (unified API) | https://bd-card-engine.fly.dev |
 | Nagzerver (API + web app) | https://bd-nagzerver.fly.dev |
-| Alities Engine | https://bd-alities-engine.fly.dev |
 | Server Monitor | https://bd-server-monitor.fly.dev |
 
 ## Documentation
@@ -95,10 +121,17 @@ See [Docs/](Docs/) for specs and architecture docs.
 | Repo | Description | Port |
 |------|-------------|------|
 | [obo](https://github.com/billdonner/obo) | **This repo** — specs, docs, orchestration hub | — |
-| [card-engine](https://github.com/billdonner/card-engine) | Unified FastAPI backend (replaces obo-server + alities-engine HTTP) | 9810 |
-| [obo-server](https://github.com/billdonner/obo-server) | Legacy flashcard API (being replaced by card-engine) | 9810 |
+| [card-engine](https://github.com/billdonner/card-engine) | Unified FastAPI backend (flashcards + trivia + ingestion) | 9810 |
 | [obo-gen](https://github.com/billdonner/obo-gen) | Swift CLI deck generator | — |
 | [obo-ios](https://github.com/billdonner/obo-ios) | SwiftUI iOS flashcard app | — |
+
+### Alities — Trivia game platform
+
+| Repo | Description | Port |
+|------|-------------|------|
+| [alities](https://github.com/billdonner/alities) | Hub — specs, docs, orchestration | — |
+| [alities-mobile](https://github.com/billdonner/alities-mobile) | SwiftUI iOS game player | — |
+| [alities-studio](https://github.com/billdonner/alities-studio) | React/TypeScript game designer | 9850 |
 
 ### Nagz — AI-mediated nagging/reminder app
 
@@ -108,16 +141,6 @@ See [Docs/](Docs/) for specs and architecture docs.
 | [nagzerver](https://github.com/billdonner/nagzerver) | Python API server | 9800 |
 | [nagz-web](https://github.com/billdonner/nagz-web) | TypeScript/React web app | 5173 |
 | [nagz-ios](https://github.com/billdonner/nagz-ios) | SwiftUI iOS app + Apple Intelligence | — |
-
-### Alities — Trivia game platform
-
-| Repo | Description | Port |
-|------|-------------|------|
-| [alities](https://github.com/billdonner/alities) | Hub — specs, docs, orchestration | — |
-| [alities-engine](https://github.com/billdonner/alities-engine) | Swift trivia engine daemon | 9847 |
-| [alities-studio](https://github.com/billdonner/alities-studio) | React/TypeScript game designer | 9850 |
-| [alities-mobile](https://github.com/billdonner/alities-mobile) | SwiftUI iOS game player | — |
-| [alities-trivwalk](https://github.com/billdonner/alities-trivwalk) | Python TrivWalk trivia game | — |
 
 ### Server Monitor — Multi-frontend server dashboard
 
@@ -133,3 +156,10 @@ See [Docs/](Docs/) for specs and architecture docs.
 |------|-------------|
 | [claude-cli](https://github.com/billdonner/claude-cli) | Swift CLI for the Claude API |
 | [Flyz](https://github.com/billdonner/Flyz) | Fly.io deployment configs for all servers |
+
+### Retired
+
+| Repo | Replaced By |
+|------|-------------|
+| [obo-server](https://github.com/billdonner/obo-server) | card-engine |
+| [alities-engine](https://github.com/billdonner/alities-engine) | card-engine ingestion pipeline |
