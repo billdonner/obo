@@ -11,6 +11,7 @@ OBO is a flashcard learning app powered by AI-generated decks. The backend is **
 | **obo-gen** | `~/obo-gen` | Swift CLI generator (writes decks to Postgres) |
 | **obo-ios** | `~/obo-ios` | SwiftUI iOS flashcard app |
 | **cardz-studio** | `~/cardz-studio` | React content management studio (port 9850) |
+| **cardz-studio-ios** | `~/cardz-studio-ios` | SwiftUI iOS content management app |
 | ~~obo-server~~ | `~/obo-server` | Retired — replaced by card-engine |
 | ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to card-engine |
 | ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
@@ -83,8 +84,34 @@ cd ~/cardz-studio && npm run dev
 | `/decks/:id/cards/:cardId` | CardEditor | Edit card |
 | `/ingestion` | Ingestion | Daemon control + run history |
 | `/search` | Search | Full-text search across cards |
+| `/about` | About | Marketing landing page (no sidebar) |
+| `/testflight` | TestFlight | iOS app download page (no sidebar) |
+| `/help` | Help | Usage documentation (no sidebar) |
 
 Extensible form registry: add a new card kind by creating one form component in `src/components/forms/` and registering it in `index.ts`.
+
+## cardz-studio-ios
+
+SwiftUI iOS app — full CRUD client for card-engine studio endpoints.
+
+```bash
+# Build and run
+cd ~/cardz-studio-ios && xcodegen generate
+xcodebuild -scheme CardzStudio -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+| Tab | View | Purpose |
+|-----|------|---------|
+| Dashboard | DashboardView | Stats, recent decks, health status |
+| Decks | DecksListView | Browse/filter/create, tap to edit |
+| Search | SearchView | Debounced full-text search |
+| Ingestion | IngestionView | Daemon control + run history |
+| Help | HelpView | Usage instructions, links, reset onboarding |
+
+- API base: `https://bd-card-engine.fly.dev`
+- Bundle ID: `com.billdonner.cardz-studio`
+- Onboarding: 4-page flow shown on first launch
+- Kind-specific card editors: flashcard, trivia, newsquiz
 
 ## Cross-Project Sync
 
@@ -95,3 +122,15 @@ After any schema change in card-engine (`schema/001_initial.sql`) or obo-gen:
 After any API change in card-engine:
 1. Update obo-ios `FlashcardStore.swift` and `Models.swift` if affected
 2. Update alities-mobile if trivia response shape changes
+3. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
+4. Update cardz-studio web `types.ts` and `api.ts` if studio endpoints change
+
+## Live URLs
+
+| Service | URL |
+|---------|-----|
+| card-engine (Fly.io) | https://bd-card-engine.fly.dev |
+| API docs | https://bd-card-engine.fly.dev/docs |
+| cardz-studio (local) | http://localhost:9850 |
+| cardz-studio About | http://localhost:9850/about |
+| cardz-studio Help | http://localhost:9850/help |
