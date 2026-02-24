@@ -1,16 +1,17 @@
 # OBO Hub — Central Entry Point
 
-OBO is a flashcard learning app powered by AI-generated decks. The backend is being unified into **card-engine**, which also serves Alities trivia from the same database.
+OBO is a flashcard learning app powered by AI-generated decks. The backend is **card-engine**, which also serves Alities trivia and runs the ingestion pipeline.
 
 ## Ecosystem Layout
 
 | Repo | Path | Purpose |
 |------|------|---------|
 | **obo** | `~/obo` | Specs, documentation, orchestration hub |
-| **card-engine** | `~/card-engine` | Unified FastAPI backend (replaces obo-server + alities-engine HTTP) |
-| **obo-server** | `~/obo-server` | Legacy flashcard API (being replaced by card-engine) |
+| **card-engine** | `~/card-engine` | Unified FastAPI backend (flashcards + trivia + ingestion) |
 | **obo-gen** | `~/obo-gen` | Swift CLI generator (writes decks to Postgres) |
 | **obo-ios** | `~/obo-ios` | SwiftUI iOS flashcard app |
+| ~~obo-server~~ | `~/obo-server` | Retired — replaced by card-engine |
+| ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to card-engine |
 
 There is NO runnable code in this repo. All executable work happens in the satellite repos.
 
