@@ -10,18 +10,27 @@ Family flashcard deck for the Donner grandchildren. Players are the cousins at t
 
 ## Family Tree
 
+### Generation 0 — Great-Grandparents (Donner side)
+
+| Person | Nickname | Status | Notes |
+|--------|----------|--------|-------|
+| Richard Donner | **Grandpoop** | deceased | Poobah's father |
+| Rose Donner | — | deceased | Poobah's mother |
+
 ### Generation 1 — Grandparents
 
 | Person | Nickname | Born | Status | Notes |
 |--------|----------|------|--------|-------|
 | Bill Donner | **Poobah** | 1953 | living | Patriarch, 73. Never "Grandpa Bill" (ambiguous) |
 | Sheryl Donner | **May May** | — | living | nee Stillwachs. Divorced from Bill in 2011, still friends |
+| Nancy | — | — | living | Poobah's sister (nee Donner), married to Gary, no children |
+| Gary | — | — | living | Nancy's husband, calls Andrew "Burford" |
 
 ### Generation 2 — Sons & Spouses
 
 | Person | Nickname | Born | Spouse | Notes |
 |--------|----------|------|--------|-------|
-| Andrew Donner | — | 1986 | Katherine (nee Todd) | Son #1 |
+| Andrew Donner | **Burford** (Gary's name for him) | 1986 | Katherine (nee Todd) | Son #1 |
 | Charles Donner | **Charlie** | 1989 | Madeleine (nee Evans) | Son #2 |
 | James Donner | — | 1991 | Angela (nee Cristiano) | Son #3, expecting boy Jul 2026 |
 
@@ -60,11 +69,15 @@ Family flashcard deck for the Donner grandchildren. Players are the cousins at t
 - Sheryl = **May May**
 - Elizabeth Todd = **GB**
 - Charles = **Charlie**
+- Richard Donner = **Grandpoop**
+- Andrew Donner = **Burford** (Gary's nickname only, almost no one else uses it)
 
 ## Relationships Summary
 
-- 20 people, 27 relationships
+- 28 people, 33 relationships
+- Richard (Grandpoop) & Rose: Poobah's parents, both deceased
 - Poobah & May May: divorced 2011 (still friendly)
+- Nancy & Gary: Poobah's sister, married, no children
 - 3 married couples: Andrew/Katherine, Charlie/Madeleine, James/Angela
 - 4 players (cousins): George, Will, Teddy, Nell
 - 2 placeholder people: Angela's sisters (names TBD)
@@ -73,8 +86,8 @@ Family flashcard deck for the Donner grandchildren. Players are the cousins at t
 
 - Angela's sisters' real names
 - John Todd's wife's name
-- Birth years for: Sheryl, Katherine, Madeleine, Angela, Bill Todd, Elizabeth Todd, Steve, Dell
-- Wedding dates for Andrew, Charlie, James
+- Birth years for: Sheryl, Katherine, Madeleine, Angela, Bill Todd, Elizabeth Todd, Steve, Dell, Richard, Rose, Nancy, Gary
+- Wedding dates for Andrew, Charlie, James, Nancy & Gary
 - Baby boy name (James & Angela, due Jul 2026)
 
 ## Flashcard Concept
