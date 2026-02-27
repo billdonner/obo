@@ -12,6 +12,8 @@ OBO is a flashcard learning app powered by AI-generated decks. The backend is **
 | **obo-ios** | `~/obo-ios` | SwiftUI iOS flashcard app |
 | **cardz-studio** | `~/cardz-studio` | React content management studio (port 9850) |
 | **cardz-studio-ios** | `~/cardz-studio-ios` | SwiftUI iOS content management app |
+| **qross** | `~/qross` | SwiftUI iOS grid trivia game |
+| **qross-web** | `~/qross-web` | React marketing website for Qross (port 9870) |
 | ~~obo-server~~ | `~/obo-server` | Retired — replaced by card-engine |
 | ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to card-engine |
 | ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
@@ -134,3 +136,5 @@ After any API change in card-engine:
 | cardz-studio (local) | http://localhost:9850 |
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
+| qross-web (local) | http://localhost:9870 |
+| qross-web (Fly.io) | https://bd-qross-web.fly.dev |
