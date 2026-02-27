@@ -137,4 +137,3 @@ After any API change in card-engine:
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
 | qross-web (local) | http://localhost:9870 |
-| qross-web (Fly.io) | https://bd-qross-web.fly.dev |
