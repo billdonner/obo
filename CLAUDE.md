@@ -27,7 +27,7 @@ Port **9810** — FastAPI + asyncpg, serves both flashcard and trivia content.
 | Endpoint | Description |
 |----------|-------------|
 | `GET /health` | DB connectivity check |
-| `GET /metrics` | Deck/card/source counts for server-monitor |
+| `GET /metrics` | 24+ metrics: system, content, ingestion, trivia/Qross, DB health |
 | `GET /api/v1/decks` | List decks (filters: `kind`, `age`, `limit`, `offset`) |
 | `GET /api/v1/decks/{id}` | Single deck with all cards |
 | `GET /api/v1/flashcards` | Bulk flashcard decks — obo-ios compatible |
@@ -115,6 +115,43 @@ xcodebuild -scheme CardzStudio -destination 'platform=iOS Simulator,name=iPhone 
 - Onboarding: 4-page flow shown on first launch
 - Kind-specific card editors: flashcard, trivia, newsquiz
 
+## Qross
+
+SwiftUI iOS grid trivia game — consumes trivia content from cardzerver.
+
+```bash
+# Build and run
+cd ~/qross && xcodegen generate
+xcodebuild -scheme Qross -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+- API base: `https://bd-cardzerver.fly.dev` (uses `/api/v1/trivia/gamedata`)
+- Bundle ID: `com.qross.app`
+- Version: 0.2, Build: 1
+- Onboarding: 5-page flow shown on first launch
+- Game variants: Face Up, Face Down, Blind
+- Board sizes: 4×4 through 8×8
+
+Qross-specific metrics are exposed via cardzerver `/metrics`:
+- `trivia_categories` — published trivia topic count
+- `trivia_questions` — total published trivia questions
+- `trivia_avg_per_cat` — average questions per topic
+- `trivia_smallest` — smallest category (warns below 50)
+
+## qross-web
+
+Port **9870** — React 19 + TypeScript + Vite marketing website.
+
+```bash
+cd ~/qross-web && npm run dev
+```
+
+| Route | Page | Purpose |
+|-------|------|---------|
+| `/` | Landing | Hero + features grid + App Store CTA |
+| `/how-to-play` | HowToPlay | Rules, scoring, hints, variants |
+| `/download` | Download | App Store link + TestFlight + QR |
+
 ## Cross-Project Sync
 
 After any schema change in cardzerver (`schema/001_initial.sql`) or obo-gen:
@@ -124,8 +161,9 @@ After any schema change in cardzerver (`schema/001_initial.sql`) or obo-gen:
 After any API change in cardzerver:
 1. Update obo-ios `FlashcardStore.swift` and `Models.swift` if affected
 2. Update alities-mobile if trivia response shape changes
-3. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
-4. Update cardz-studio web `types.ts` and `api.ts` if studio endpoints change
+3. Update qross if `/api/v1/trivia/gamedata` response shape changes
+4. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
+5. Update cardz-studio web `types.ts` and `api.ts` if studio endpoints change
 
 ## Live URLs
 
@@ -137,3 +175,5 @@ After any API change in cardzerver:
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
 | qross-web (local) | http://localhost:9870 |
+| server-monitor (Fly.io) | https://bd-server-monitor.fly.dev |
+| server-monitor (local) | http://localhost:9860 |
