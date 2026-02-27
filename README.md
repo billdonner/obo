@@ -1,13 +1,13 @@
 # OBO
 
-OBO is a flashcard learning app powered by AI-generated decks stored in PostgreSQL and served via a FastAPI backend. **card-engine** is the unified backend serving both OBO flashcards and Alities trivia, with a built-in OpenAI ingestion pipeline.
+OBO is a flashcard learning app powered by AI-generated decks stored in PostgreSQL and served via a FastAPI backend. **cardzerver** is the unified backend serving both OBO flashcards and Alities trivia, with a built-in OpenAI ingestion pipeline.
 
 ## Architecture
 
 ```
                     ┌──────────────────┐
 obo-gen ──────────► │                  │ ──► /api/v1/flashcards ──► obo-ios / flasherz-ios
-  (CLI)             │   card-engine    │
+  (CLI)             │   cardzerver    │
 OpenAI ◄──────────► │   (FastAPI)      │ ──► /api/v1/trivia ─────► alities-mobile
   (ingestion)       │   port 9810      │
                     │                  │ ──► /api/v1/ingestion ──► daemon control
@@ -19,12 +19,12 @@ OpenAI ◄──────────► │   (FastAPI)      │ ──► /
                        (card_engine)
 ```
 
-- **card-engine** — unified backend: flashcards, trivia content, and OpenAI ingestion daemon
+- **cardzerver** — unified backend: flashcards, trivia content, and OpenAI ingestion daemon
 - **obo-gen** — Swift CLI that calls Claude API to generate flashcard decks, writes to Postgres
 - **obo-ios** / **flasherz-ios** — fetch decks from `/api/v1/flashcards`
 - **alities-mobile** — fetches trivia from `/api/v1/trivia/gamedata`, monitors ingestion via `/api/v1/ingestion/status`
 
-## card-engine API
+## cardzerver API
 
 Port **9810** — FastAPI + asyncpg + httpx.
 
@@ -81,16 +81,16 @@ Port **9810** — FastAPI + asyncpg + httpx.
 
 ```bash
 # Install dependencies
-cd ~/card-engine && pip install -e ".[dev]"
+cd ~/cardzerver && pip install -e ".[dev]"
 
 # Apply schema
-psql -d card_engine -f ~/card-engine/schema/001_initial.sql
+psql -d card_engine -f ~/cardzerver/schema/001_initial.sql
 
 # Run server (dev)
-cd ~/card-engine && python3.11 -m uvicorn server.app:app --port 9810 --reload
+cd ~/cardzerver && python3.11 -m uvicorn server.app:app --port 9810 --reload
 
 # Run server with ingestion enabled
-cd ~/card-engine && CE_OPENAI_API_KEY=sk-... python3.11 -m uvicorn server.app:app --port 9810 --reload
+cd ~/cardzerver && CE_OPENAI_API_KEY=sk-... python3.11 -m uvicorn server.app:app --port 9810 --reload
 
 # Test endpoints
 curl localhost:9810/health
@@ -106,7 +106,7 @@ curl localhost:9810/api/v1/ingestion/runs
 
 | App | URL |
 |-----|-----|
-| card-engine (unified API) | https://bd-card-engine.fly.dev |
+| cardzerver (unified API) | https://bd-cardzerver.fly.dev |
 | Nagzerver (API + web app) | https://bd-nagzerver.fly.dev |
 | Server Monitor | https://bd-server-monitor.fly.dev |
 
@@ -116,12 +116,12 @@ See [Docs/](Docs/) for specs and architecture docs.
 
 ## All Projects
 
-### OBO / card-engine — Flashcard + trivia platform
+### OBO / cardzerver — Flashcard + trivia platform
 
 | Repo | Description | Port |
 |------|-------------|------|
 | [obo](https://github.com/billdonner/obo) | **This repo** — specs, docs, orchestration hub | — |
-| [card-engine](https://github.com/billdonner/card-engine) | Unified FastAPI backend (flashcards + trivia + ingestion) | 9810 |
+| [cardzerver](https://github.com/billdonner/cardzerver) | Unified FastAPI backend (flashcards + trivia + ingestion) | 9810 |
 | [obo-gen](https://github.com/billdonner/obo-gen) | Swift CLI deck generator | — |
 | [obo-ios](https://github.com/billdonner/obo-ios) | SwiftUI iOS flashcard app | — |
 
@@ -161,5 +161,5 @@ See [Docs/](Docs/) for specs and architecture docs.
 
 | Repo | Replaced By |
 |------|-------------|
-| [obo-server](https://github.com/billdonner/obo-server) | card-engine |
-| [alities-engine](https://github.com/billdonner/alities-engine) | card-engine ingestion pipeline |
+| [obo-server](https://github.com/billdonner/obo-server) | cardzerver |
+| [alities-engine](https://github.com/billdonner/alities-engine) | cardzerver ingestion pipeline |

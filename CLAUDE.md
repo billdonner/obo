@@ -1,26 +1,26 @@
 # OBO Hub — Central Entry Point
 
-OBO is a flashcard learning app powered by AI-generated decks. The backend is **card-engine**, which also serves Alities trivia and runs the ingestion pipeline.
+OBO is a flashcard learning app powered by AI-generated decks. The backend is **cardzerver**, which also serves Alities trivia and runs the ingestion pipeline.
 
 ## Ecosystem Layout
 
 | Repo | Path | Purpose |
 |------|------|---------|
 | **obo** | `~/obo` | Specs, documentation, orchestration hub |
-| **card-engine** | `~/card-engine` | Unified FastAPI backend (flashcards + trivia + ingestion) |
+| **cardzerver** | `~/cardzerver` | Unified FastAPI backend (flashcards + trivia + ingestion) |
 | **obo-gen** | `~/obo-gen` | Swift CLI generator (writes decks to Postgres) |
 | **obo-ios** | `~/obo-ios` | SwiftUI iOS flashcard app |
 | **cardz-studio** | `~/cardz-studio` | React content management studio (port 9850) |
 | **cardz-studio-ios** | `~/cardz-studio-ios` | SwiftUI iOS content management app |
 | **qross** | `~/qross` | SwiftUI iOS grid trivia game |
 | **qross-web** | `~/qross-web` | React marketing website for Qross (port 9870) |
-| ~~obo-server~~ | `~/obo-server` | Retired — replaced by card-engine |
-| ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to card-engine |
+| ~~obo-server~~ | `~/obo-server` | Retired — replaced by cardzerver |
+| ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to cardzerver |
 | ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
 
 There is NO runnable code in this repo. All executable work happens in the satellite repos.
 
-## card-engine Server
+## cardzerver Server
 
 Port **9810** — FastAPI + asyncpg, serves both flashcard and trivia content.
 
@@ -50,8 +50,8 @@ Port **9810** — FastAPI + asyncpg, serves both flashcard and trivia content.
 | `GET /api/v1/studio/search?q=` | Full-text search across cards |
 
 ```bash
-# Run card-engine
-cd ~/card-engine && python3.11 -m uvicorn server.app:app --port 9810 --reload
+# Run cardzerver
+cd ~/cardzerver && python3.11 -m uvicorn server.app:app --port 9810 --reload
 ```
 
 ## Ingestion Pipeline
@@ -73,7 +73,7 @@ The daemon cycles through 20 canonical trivia categories, generates questions vi
 Port **9850** — React 19 + TypeScript + Vite content management frontend.
 
 ```bash
-# Run cardz-studio (requires card-engine running on 9810)
+# Run cardz-studio (requires cardzerver running on 9810)
 cd ~/cardz-studio && npm run dev
 ```
 
@@ -94,7 +94,7 @@ Extensible form registry: add a new card kind by creating one form component in 
 
 ## cardz-studio-ios
 
-SwiftUI iOS app — full CRUD client for card-engine studio endpoints.
+SwiftUI iOS app — full CRUD client for cardzerver studio endpoints.
 
 ```bash
 # Build and run
@@ -110,18 +110,18 @@ xcodebuild -scheme CardzStudio -destination 'platform=iOS Simulator,name=iPhone 
 | Ingestion | IngestionView | Daemon control + run history |
 | Help | HelpView | Usage instructions, links, reset onboarding |
 
-- API base: `https://bd-card-engine.fly.dev`
+- API base: `https://bd-cardzerver.fly.dev`
 - Bundle ID: `com.billdonner.cardz-studio`
 - Onboarding: 4-page flow shown on first launch
 - Kind-specific card editors: flashcard, trivia, newsquiz
 
 ## Cross-Project Sync
 
-After any schema change in card-engine (`schema/001_initial.sql`) or obo-gen:
-1. Update card-engine adapter endpoints if response shape is affected
+After any schema change in cardzerver (`schema/001_initial.sql`) or obo-gen:
+1. Update cardzerver adapter endpoints if response shape is affected
 2. Update obo-ios models in `Models.swift` if fields change
 
-After any API change in card-engine:
+After any API change in cardzerver:
 1. Update obo-ios `FlashcardStore.swift` and `Models.swift` if affected
 2. Update alities-mobile if trivia response shape changes
 3. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
@@ -131,8 +131,8 @@ After any API change in card-engine:
 
 | Service | URL |
 |---------|-----|
-| card-engine (Fly.io) | https://bd-card-engine.fly.dev |
-| API docs | https://bd-card-engine.fly.dev/docs |
+| cardzerver (Fly.io) | https://bd-cardzerver.fly.dev |
+| API docs | https://bd-cardzerver.fly.dev/docs |
 | cardz-studio (local) | http://localhost:9850 |
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
