@@ -14,6 +14,7 @@ OBO is a flashcard learning app powered by AI-generated decks. The backend is **
 | **cardz-studio-ios** | `~/cardz-studio-ios` | SwiftUI iOS content management app |
 | **qross** | `~/qross` | SwiftUI iOS grid trivia game |
 | **qross-web** | `~/qross-web` | React marketing website for Qross (port 9870) |
+| **family-ios** | `~/family-ios` | SwiftUI iOS private family tree app |
 | ~~obo-server~~ | `~/obo-server` | Retired — replaced by cardzerver |
 | ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to cardzerver |
 | ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
@@ -152,6 +153,28 @@ cd ~/qross-web && npm run dev
 | `/how-to-play` | HowToPlay | Rules, scoring, hints, variants |
 | `/download` | Download | App Store link + TestFlight + QR |
 
+## family-ios
+
+SwiftUI iOS app — private family tree client for cardzerver family API.
+
+```bash
+cd ~/family-ios && xcodegen generate
+xcodebuild -scheme FamilyTree -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+| Tab | View | Purpose |
+|-----|------|---------|
+| Dashboard | DashboardView | Stats grid, open items, recent members |
+| Tree | TreeView | Browse/filter/add/edit/delete people |
+| Chat | ChatView | LLM-powered conversational tree builder |
+| Players | PlayersView | Player list + deck generation |
+| Help | HelpView | About, reset onboarding/family |
+
+- API base: `https://bd-cardzerver.fly.dev` (uses `/api/v1/family/`)
+- Bundle ID: `com.billdonner.family-tree`
+- Version: 1.0, Build: 1
+- Three-gate launch: onboarding -> family setup -> main tabs
+
 ## Cross-Project Sync
 
 After any schema change in cardzerver (`schema/001_initial.sql`) or obo-gen:
@@ -164,6 +187,7 @@ After any API change in cardzerver:
 3. Update qross if `/api/v1/trivia/gamedata` response shape changes
 4. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
 5. Update cardz-studio web `types.ts` and `api.ts` if studio endpoints change
+6. Update family-ios `Models.swift` and `APIClient.swift` if family endpoints change
 
 ## Live URLs
 
