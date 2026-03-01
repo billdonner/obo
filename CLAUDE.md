@@ -212,6 +212,7 @@ After any API change in cardzerver:
 | cardz-studio (local) | http://localhost:9850 |
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
+| qross-web (Fly.io) | https://bd-qross-web.fly.dev |
 | qross-web (local) | http://localhost:9870 |
 | server-monitor (Fly.io) | https://bd-server-monitor.fly.dev |
 | server-monitor (local) | http://localhost:9860 |
