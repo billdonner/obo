@@ -14,7 +14,8 @@ OBO is a flashcard learning app powered by AI-generated decks. The backend is **
 | **cardz-studio-ios** | `~/cardz-studio-ios` | SwiftUI iOS content management app |
 | **qross** | `~/qross` | SwiftUI iOS grid trivia game |
 | **qross-web** | `~/qross-web` | React marketing website for Qross (port 9870) |
-| **family-ios** | `~/family-ios` | SwiftUI iOS private family tree app |
+| **family-ios** | `~/family-ios` | SwiftUI iOS family tree app (v2: GRDB, Canvas, GEDCOM) |
+| **family-kids** | `~/family-kids` | SwiftUI iOS kids flashcard app (cardzerver client) |
 | ~~obo-server~~ | `~/obo-server` | Retired — replaced by cardzerver |
 | ~~alities-engine~~ | `~/alities-engine` | Retired — ingestion pipeline ported to cardzerver |
 | ~~alities-studio~~ | `~/alities-studio` | Retired — replaced by cardz-studio |
@@ -153,27 +154,39 @@ cd ~/qross-web && npm run dev
 | `/how-to-play` | HowToPlay | Rules, scoring, hints, variants |
 | `/download` | Download | App Store link + TestFlight + QR |
 
-## family-ios
+## family-ios (v2)
 
-SwiftUI iOS app — private family tree client for cardzerver family API.
+Visual family tree app — local-first GRDB + Canvas tree + relationship flashcards + GEDCOM export.
 
 ```bash
 cd ~/family-ios && xcodegen generate
 xcodebuild -scheme FamilyTree -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+xcodebuild -scheme FamilyTreeTests -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' test
 ```
 
-| Tab | View | Purpose |
-|-----|------|---------|
-| Dashboard | DashboardView | Stats grid, open items, recent members |
-| Tree | TreeView | Browse/filter/add/edit/delete people |
-| Chat | ChatView | LLM-powered conversational tree builder |
-| Players | PlayersView | Player list + deck generation |
-| Help | HelpView | About, reset onboarding/family |
-
-- API base: `https://bd-cardzerver.fly.dev` (uses `/api/v1/family/`)
+- **Data:** GRDB local SQLite + optional cardzerver sync
+- **Layout:** iPad 3-panel (Tree+Flashcards / Chat) / iPhone 3-tab
+- **Tree:** Interactive Canvas with Reingold-Tilford layout
+- **Flashcards:** Auto-generated from relationship graph
+- **Export:** GEDCOM 5.5.1 with validation
 - Bundle ID: `com.billdonner.family-tree`
+- Version: 2.0, Build: 1
+- iOS 26.0, Swift 6.0
+- Three-gate launch: onboarding -> family setup -> adaptive root
+
+## family-kids
+
+Kids flashcard app — pure cardzerver REST client.
+
+```bash
+cd ~/family-kids && xcodegen generate
+xcodebuild -scheme FamilyKids -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
+```
+
+- Flow: onboarding -> family ID -> player select -> deck list -> card play
+- Bundle ID: `com.billdonner.family-kids`
 - Version: 1.0, Build: 1
-- Three-gate launch: onboarding -> family setup -> main tabs
+- iOS 17.0, Swift 6.0
 
 ## Cross-Project Sync
 
@@ -187,7 +200,8 @@ After any API change in cardzerver:
 3. Update qross if `/api/v1/trivia/gamedata` response shape changes
 4. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
 5. Update cardz-studio web `types.ts` and `api.ts` if studio endpoints change
-6. Update family-ios `Models.swift` and `APIClient.swift` if family endpoints change
+6. Update family-ios `SyncModels.swift` and `SyncService.swift` if family endpoints change
+7. Update family-kids `KidsModels.swift` and `KidsAPIClient.swift` if family endpoints change
 
 ## Live URLs
 
