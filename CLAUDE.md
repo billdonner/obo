@@ -209,6 +209,7 @@ After any API change in cardzerver:
 |---------|-----|
 | cardzerver (Fly.io) | https://bd-cardzerver.fly.dev |
 | API docs | https://bd-cardzerver.fly.dev/docs |
+| cardz-studio (Fly.io) | https://bd-cardz-studio.fly.dev |
 | cardz-studio (local) | http://localhost:9850 |
 | cardz-studio About | http://localhost:9850/about |
 | cardz-studio Help | http://localhost:9850/help |
