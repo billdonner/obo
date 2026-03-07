@@ -51,6 +51,37 @@ Port **9810** — FastAPI + asyncpg, serves both flashcard and trivia content.
 | `POST /api/v1/studio/decks/{id}/cards/reorder` | Batch reorder cards |
 | `GET /api/v1/studio/search?q=` | Full-text search across cards |
 
+### Family Tree API — device-based access control
+
+All family endpoints require `?player_id=<uuid>`. Families are private — only members can see or edit them.
+
+| Endpoint | Access | Description |
+|----------|--------|-------------|
+| `POST /api/v1/family` | open | Create family (`{name, player_id}`) — creator becomes owner |
+| `GET /api/v1/family?player_id=` | open | List player's families |
+| `GET /api/v1/family/{id}?player_id=` | member | Full tree |
+| `DELETE /api/v1/family/{id}?player_id=` | owner | Delete family |
+| `POST /api/v1/family/{id}/people?player_id=` | member | Add person |
+| `PATCH /api/v1/family/{id}/people/{pid}?player_id=` | member | Update person |
+| `DELETE /api/v1/family/{id}/people/{pid}?player_id=` | member | Delete person |
+| `POST /api/v1/family/{id}/relationships?player_id=` | member | Add relationship |
+| `DELETE /api/v1/family/{id}/relationships/{rid}?player_id=` | member | Delete relationship |
+| `POST /api/v1/family/join` | open | Join via invite code (`{player_id, invite_code}`) |
+| `POST /api/v1/family/{id}/invite?player_id=` | owner | Create 6-char invite code |
+| `GET /api/v1/family/{id}/invite?player_id=` | owner | List invite codes |
+| `DELETE /api/v1/family/{id}/invite/{iid}?player_id=` | owner | Revoke invite |
+| `GET /api/v1/family/{id}/members?player_id=` | member | List members + roles |
+| `DELETE /api/v1/family/{id}/members/{pid}?player_id=` | owner | Remove member |
+| `GET /api/v1/family/{id}/open_items?player_id=` | member | Missing field report |
+| `POST /api/v1/family/{id}/chat?player_id=` | member | Chat builder (LLM applies patches) |
+| `GET /api/v1/family/{id}/chat/history?player_id=` | member | Chat history |
+| `POST /api/v1/family/{id}/generate/{player_id}?player_id=` | member | Generate decks for a player |
+| `GET /api/v1/family/{id}/deck/{player_id}?player_id=` | member | List generated decks |
+| `GET /api/v1/family/{id}/decks/{deck_id}?player_id=` | member | List cards in a generated deck |
+| `DELETE /api/v1/family/{id}/decks/{deck_id}/cards/{cid}?player_id=` | member | Remove card + add to exclusion list |
+| `GET /api/v1/family/{id}/exclusions?player_id=` | member | List excluded questions |
+| `DELETE /api/v1/family/{id}/exclusions/{eid}?player_id=` | member | Restore excluded question |
+
 ```bash
 # Run cardzerver
 cd ~/cardzerver && python3.11 -m uvicorn server.app:app --port 9810 --reload
@@ -72,25 +103,31 @@ The daemon cycles through 20 canonical trivia categories, generates questions vi
 
 ## cardz-studio
 
-Port **9850** — React 19 + TypeScript + Vite content management frontend.
+Embedded React SPA served at `/studio` from cardzerver. In production: `https://bd-cardzerver.fly.dev/studio`.
 
 ```bash
-# Run cardz-studio (requires cardzerver running on 9810)
+# Run locally (requires cardzerver running on 9810)
 cd ~/cardz-studio && npm run dev
+# Build (embedded in deploy)
+cd ~/cardz-studio && npm run build
 ```
+
+**Player identity:** On first load, the studio generates a `device_id` UUID, stores it in localStorage, calls `POST /api/v1/players` to get a `player_id`, and stores that too. All family API calls include `?player_id=` automatically.
 
 | Route | Page | Purpose |
 |-------|------|---------|
 | `/` | Dashboard | Deck counts, engine status, recent decks |
 | `/decks` | DecksList | Browse/filter/create decks |
 | `/decks/:id` | DeckEditor | Edit deck metadata, manage cards |
-| `/decks/:id/cards/new` | CardEditor | Create card (kind-specific form) |
-| `/decks/:id/cards/:cardId` | CardEditor | Edit card |
 | `/ingestion` | Ingestion | Daemon control + run history |
 | `/search` | Search | Full-text search across cards |
-| `/about` | About | Marketing landing page (no sidebar) |
-| `/testflight` | TestFlight | iOS app download page (no sidebar) |
-| `/help` | Help | Usage documentation (no sidebar) |
+| `/family` | FamilyList | List player's families; create or join via invite code |
+| `/family/:id` | FamilyTree | Full tree editor + deck editor + access/invite panel |
+| `/family/:id/chat` | FamilyChat | LLM chat builder |
+
+**Family tree features in the studio:**
+- **Access panel** (sidebar): shows role (Owner/Member), member count, invite codes with Copy/Revoke buttons, "+ New Invite Code"
+- **Family Decks section** (main column): inline card editor — expand any deck, click Remove on any card to delete it and add the question to the exclusion list; excluded questions are skipped on regeneration; Restore button to bring them back
 
 Extensible form registry: add a new card kind by creating one form component in `src/components/forms/` and registering it in `index.ts`.
 
@@ -129,8 +166,10 @@ xcodebuild -scheme Qross -destination 'platform=iOS Simulator,name=iPhone 17 Pro
 
 - API base: `https://bd-cardzerver.fly.dev` (uses `/api/v1/trivia/gamedata`)
 - Bundle ID: `com.qross.app`
-- Version: 0.2, Build: 1
-- Onboarding: 5-page flow shown on first launch
+- Version: 0.2, Build: 26
+- Onboarding: 6-page flow (includes AI Move Advisor page)
+- Home screen: minimal cover with presets, topic picker (2+ required), gear icon for Settings sheet
+- AI Move Advisor: smart scoring with risk badges (Safe/Caution/Risky), dead-end detection
 - Game variants: Face Up, Face Down, Blind
 - Board sizes: 4×4 through 8×8
 
@@ -190,12 +229,12 @@ xcodebuild -scheme FamilyKids -destination 'platform=iOS Simulator,name=iPhone 1
 
 ## Cross-Project Sync
 
-After any schema change in cardzerver (`schema/001_initial.sql`) or obo-gen:
+After any schema change in cardzerver (`schema/`) or obo-gen:
 1. Update cardzerver adapter endpoints if response shape is affected
-2. Update obo-ios models in `Models.swift` if fields change
+2. Update obo-ios models in `Models.swift` if flashcard fields change
 
 After any API change in cardzerver:
-1. Update obo-ios `FlashcardStore.swift` and `Models.swift` if affected
+1. Update obo-ios `FlashcardStore.swift` and `Models.swift` if `/api/v1/flashcards` is affected
 2. Update alities-mobile if trivia response shape changes
 3. Update qross if `/api/v1/trivia/gamedata` response shape changes
 4. Update cardz-studio-ios `Models.swift` and `APIClient.swift` if studio endpoints change
@@ -203,17 +242,18 @@ After any API change in cardzerver:
 6. Update family-ios `SyncModels.swift` and `SyncService.swift` if family endpoints change
 7. Update family-kids `KidsModels.swift` and `KidsAPIClient.swift` if family endpoints change
 
+After any family tree schema change (`009_family_access.sql`, `010_family_deck_editing.sql`):
+1. Update cardz-studio `types.ts` + `api.ts` for new response fields
+2. Update family-ios if `FamilyMember`, `FamilyInvite`, or deck editing models change
+3. Update family-kids if deck exclusion behavior affects served cards
+
 ## Live URLs
 
 | Service | URL |
 |---------|-----|
-| cardzerver (Fly.io) | https://bd-cardzerver.fly.dev |
-| API docs | https://bd-cardzerver.fly.dev/docs |
-| cardz-studio (Fly.io) | https://bd-cardz-studio.fly.dev |
-| cardz-studio (local) | http://localhost:9850 |
-| cardz-studio About | http://localhost:9850/about |
-| cardz-studio Help | http://localhost:9850/help |
-| qross-web (Fly.io) | https://bd-qross-web.fly.dev |
-| qross-web (local) | http://localhost:9870 |
+| cardzerver API | https://bd-cardzerver.fly.dev |
+| API docs (Swagger) | https://bd-cardzerver.fly.dev/docs |
+| cardz-studio (embedded) | https://bd-cardzerver.fly.dev/studio |
+| cardz-studio (local) | http://localhost:9810/studio |
 | server-monitor (Fly.io) | https://bd-server-monitor.fly.dev |
 | server-monitor (local) | http://localhost:9860 |
